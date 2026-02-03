@@ -3,6 +3,7 @@
  * GET /api/quotes/[id]/pdf
  */
 
+import React from 'react';
 import { NextResponse } from 'next/server';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { prisma } from '@/lib/db';
@@ -43,7 +44,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     // PDF 생성
     const pdfBuffer = await renderToBuffer(
-      QuotePDF({
+      React.createElement(QuotePDF, {
         quote: {
           quoteNumber: quote.quoteNumber,
           validUntil: quote.validUntil.toISOString(),
