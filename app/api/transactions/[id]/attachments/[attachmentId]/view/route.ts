@@ -4,6 +4,9 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/transactions/:id/attachments/:attachmentId/view
  * 첨부파일 미리보기 (브라우저에서 열기)

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { uploadTransactionAttachment } from '@/lib/blob-storage';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/transactions/[id]/attachments
  * 거래내역에 첨부파일 업로드 (영수증, 인보이스 등)

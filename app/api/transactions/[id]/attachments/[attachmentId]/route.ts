@@ -6,6 +6,9 @@ import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
 import { del } from '@vercel/blob'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/transactions/:id/attachments/:attachmentId
  * 첨부파일 다운로드
