@@ -4,6 +4,7 @@ import { unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
+import { del } from '@vercel/blob'
 
 /**
  * GET /api/transactions/:id/attachments/:attachmentId
@@ -27,24 +28,49 @@ export async function GET(
       )
     }
 
-    const filePath = join(process.cwd(), attachment.filePath)
+    // Check if file is on Vercel Blob (URL) or local filesystem
+    if (attachment.filePath.startsWith('http://') || attachment.filePath.startsWith('https://')) {
+      // File is on Vercel Blob - fetch and stream
+      const response = await fetch(attachment.filePath)
 
-    if (!existsSync(filePath)) {
-      return NextResponse.json(
-        { success: false, error: 'File not found on server' },
-        { status: 404 }
-      )
+      if (!response.ok) {
+        return NextResponse.json(
+          { success: false, error: 'File not found on Blob storage' },
+          { status: 404 }
+        )
+      }
+
+      const blob = await response.blob()
+      const buffer = await blob.arrayBuffer()
+
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': attachment.mimeType,
+          'Content-Disposition': `attachment; filename="${encodeURIComponent(attachment.fileName)}"`,
+          'Content-Length': attachment.fileSize.toString(),
+        },
+      })
+    } else {
+      // File is on local filesystem (for development)
+      const filePath = join(process.cwd(), attachment.filePath)
+
+      if (!existsSync(filePath)) {
+        return NextResponse.json(
+          { success: false, error: 'File not found on server' },
+          { status: 404 }
+        )
+      }
+
+      const fileBuffer = await readFile(filePath)
+
+      return new NextResponse(fileBuffer, {
+        headers: {
+          'Content-Type': attachment.mimeType,
+          'Content-Disposition': `attachment; filename="${encodeURIComponent(attachment.fileName)}"`,
+          'Content-Length': attachment.fileSize.toString(),
+        },
+      })
     }
-
-    const fileBuffer = await readFile(filePath)
-
-    return new NextResponse(fileBuffer, {
-      headers: {
-        'Content-Type': attachment.mimeType,
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(attachment.fileName)}"`,
-        'Content-Length': attachment.fileSize.toString(),
-      },
-    })
   } catch (error) {
     console.error('Error downloading attachment:', error)
     return NextResponse.json(
@@ -79,11 +105,16 @@ export async function DELETE(
       )
     }
 
-    const filePath = join(process.cwd(), attachment.filePath)
-
-    // 파일 삭제
-    if (existsSync(filePath)) {
-      await unlink(filePath)
+    // Check if file is on Vercel Blob or local filesystem
+    if (attachment.filePath.startsWith('http://') || attachment.filePath.startsWith('https://')) {
+      // Delete from Vercel Blob
+      await del(attachment.filePath)
+    } else {
+      // Delete from local filesystem
+      const filePath = join(process.cwd(), attachment.filePath)
+      if (existsSync(filePath)) {
+        await unlink(filePath)
+      }
     }
 
     // DB에서 삭제

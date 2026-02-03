@@ -26,25 +26,50 @@ export async function GET(
       )
     }
 
-    const filePath = join(process.cwd(), attachment.filePath)
+    // Check if file is on Vercel Blob (URL) or local filesystem
+    if (attachment.filePath.startsWith('http://') || attachment.filePath.startsWith('https://')) {
+      // File is on Vercel Blob - fetch and stream
+      const response = await fetch(attachment.filePath)
 
-    if (!existsSync(filePath)) {
-      return NextResponse.json(
-        { success: false, error: 'File not found on server' },
-        { status: 404 }
-      )
+      if (!response.ok) {
+        return NextResponse.json(
+          { success: false, error: 'File not found on Blob storage' },
+          { status: 404 }
+        )
+      }
+
+      const blob = await response.blob()
+      const buffer = await blob.arrayBuffer()
+
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': attachment.mimeType,
+          'Content-Disposition': `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
+          'Content-Length': attachment.fileSize.toString(),
+        },
+      })
+    } else {
+      // File is on local filesystem (for development)
+      const filePath = join(process.cwd(), attachment.filePath)
+
+      if (!existsSync(filePath)) {
+        return NextResponse.json(
+          { success: false, error: 'File not found on server' },
+          { status: 404 }
+        )
+      }
+
+      const fileBuffer = await readFile(filePath)
+
+      // inline으로 설정하여 브라우저에서 바로 열리도록
+      return new NextResponse(fileBuffer, {
+        headers: {
+          'Content-Type': attachment.mimeType,
+          'Content-Disposition': `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
+          'Content-Length': attachment.fileSize.toString(),
+        },
+      })
     }
-
-    const fileBuffer = await readFile(filePath)
-
-    // inline으로 설정하여 브라우저에서 바로 열리도록
-    return new NextResponse(fileBuffer, {
-      headers: {
-        'Content-Type': attachment.mimeType,
-        'Content-Disposition': `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
-        'Content-Length': attachment.fileSize.toString(),
-      },
-    })
   } catch (error) {
     console.error('Error viewing attachment:', error)
     return NextResponse.json(
