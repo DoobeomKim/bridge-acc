@@ -1,135 +1,128 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { uploadTransactionAttachment } from '@/lib/blob-storage';
 
 /**
- * GET /api/transactions/:id/attachments
- * 거래의 모든 첨부파일 목록 조회
- */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id } = params
-
-    const attachments = await prisma.transactionAttachment.findMany({
-      where: { transactionId: id },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    return NextResponse.json({
-      success: true,
-      data: attachments,
-    })
-  } catch (error) {
-    console.error('Error fetching attachments:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch attachments',
-      },
-      { status: 500 }
-    )
-  }
-}
-
-/**
- * POST /api/transactions/:id/attachments
- * 첨부파일 업로드
+ * POST /api/transactions/[id]/attachments
+ * 거래내역에 첨부파일 업로드 (영수증, 인보이스 등)
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id: transactionId } = params
+    const transactionId = params.id;
 
-    // 거래 존재 확인
+    // 거래내역 존재 확인
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
-    })
+    });
 
     if (!transaction) {
       return NextResponse.json(
         { success: false, error: 'Transaction not found' },
         { status: 404 }
-      )
+      );
     }
 
-    const formData = await request.formData()
-    const files = formData.getAll('files') as File[]
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
 
-    if (files.length === 0) {
+    if (!file) {
       return NextResponse.json(
-        { success: false, error: 'No files provided' },
+        { success: false, error: 'No file provided' },
         { status: 400 }
-      )
+      );
     }
 
-    // 파일 크기 제한 (10MB per file)
-    const maxSize = 10 * 1024 * 1024
-    for (const file of files) {
-      if (file.size > maxSize) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `File ${file.name} is too large. Maximum size is 10MB.`,
-          },
-          { status: 400 }
-        )
-      }
+    // 파일 크기 검증 (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { success: false, error: 'File too large. Maximum size is 10MB.' },
+        { status: 400 }
+      );
     }
 
-    // 저장 디렉토리 생성
-    const uploadDir = join(process.cwd(), 'uploads', 'transactions', transactionId)
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
+    // 허용된 파일 타입
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+    ];
 
-    const savedAttachments = []
-
-    for (const file of files) {
-      // 파일명 sanitize (경로 traversal 방지)
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-      const timestamp = Date.now()
-      const uniqueFileName = `${timestamp}_${sanitizedFileName}`
-      const filePath = join(uploadDir, uniqueFileName)
-
-      // 파일 저장
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      await writeFile(filePath, buffer)
-
-      // DB에 메타데이터 저장
-      const attachment = await prisma.transactionAttachment.create({
-        data: {
-          transactionId,
-          fileName: file.name,
-          filePath: `uploads/transactions/${transactionId}/${uniqueFileName}`,
-          fileSize: file.size,
-          mimeType: file.type || 'application/octet-stream',
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid file type. Allowed: PDF, JPG, PNG, WEBP',
         },
-      })
-
-      savedAttachments.push(attachment)
+        { status: 400 }
+      );
     }
+
+    // Vercel Blob에 업로드
+    const uploadResult = await uploadTransactionAttachment(file, transactionId);
+
+    // DB에 첨부파일 정보 저장
+    const attachment = await prisma.transactionAttachment.create({
+      data: {
+        transactionId,
+        fileName: uploadResult.fileName,
+        filePath: uploadResult.url,
+        fileSize: uploadResult.fileSize,
+        mimeType: uploadResult.mimeType,
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      data: savedAttachments,
-    })
+      data: attachment,
+    });
   } catch (error) {
-    console.error('Error uploading attachments:', error)
+    console.error('Error uploading attachment:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to upload attachments',
+        error: 'Failed to upload attachment',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
-    )
+    );
+  }
+}
+
+/**
+ * GET /api/transactions/[id]/attachments
+ * 거래내역의 첨부파일 목록 조회
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const transactionId = params.id;
+
+    const attachments = await prisma.transactionAttachment.findMany({
+      where: { transactionId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: attachments,
+    });
+  } catch (error) {
+    console.error('Error fetching attachments:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch attachments',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }
