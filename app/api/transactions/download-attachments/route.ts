@@ -5,6 +5,9 @@ import { existsSync, createReadStream } from 'fs'
 import { join } from 'path'
 import { Readable } from 'stream'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams

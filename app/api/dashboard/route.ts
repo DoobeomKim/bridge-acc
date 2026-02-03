@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { startOfMonth, endOfMonth } from 'date-fns'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/dashboard
  * Dashboard 통계 조회

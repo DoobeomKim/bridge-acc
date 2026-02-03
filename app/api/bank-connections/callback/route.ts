@@ -3,6 +3,9 @@ import { getFinAPIClient } from '@/lib/finapi-client'
 import { prisma } from '@/lib/db'
 import { encrypt } from '@/lib/encryption'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/bank-connections/callback
  * OAuth callback after user connects bank
