@@ -1,0 +1,322 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// BankAccount - 은행 계좌 정보
+model BankAccount {
+  id            String    @id @default(cuid())
+  bankName      String    @default("Vivid")
+  accountName   String    // 계좌명 (예: "Geschäftskonto")
+  iban          String?
+  balance       Float     @default(0)
+  currency      String    @default("EUR")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  transactions  Transaction[]
+  connection    BankConnection?
+}
+
+// Transaction - 거래내역 (핵심 모델)
+model Transaction {
+  id              String    @id @default(cuid())
+  bankAccountId   String
+  date            DateTime
+  amount          Float     // 양수: 수입, 음수: 지출
+  currency        String    @default("EUR")
+  description     String    // 거래 설명
+  counterparty    String?   // 거래 상대방
+
+  // 사용자가 추가하는 정보
+  category        String?   // "revenue", "expense_office", "expense_travel", etc.
+  subCategory     String?   // 세부 분류
+  vatRate         Float?    // 0, 7, 19 (독일 VAT율)
+  vatAmount       Float?    // VAT 금액 (자동 계산 가능)
+  notes           String?   // 메모
+  tags            String?   // 태그 (JSON array로 저장)
+
+  // Import 추적 (CSV + API)
+  source          String?   // "api" | "csv" | "manual"
+  externalId      String?   // API에서 받은 거래 ID (중복 방지)
+  importBatchId   String?   // 같은 CSV에서 가져온 거래들을 그룹화
+  csvRowHash      String?   // 중복 방지용 해시
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  attachments     TransactionAttachment[]
+  invoice         Invoice?
+
+  @@index([date])
+  @@index([category])
+  @@index([csvRowHash])
+  @@index([externalId])
+  @@index([source])
+}
+
+// TransactionAttachment - 거래 증빙자료 (영수증, 인보이스 등)
+model TransactionAttachment {
+  id              String    @id @default(cuid())
+  transactionId   String
+  fileName        String    // 원본 파일명
+  filePath        String    // 서버에 저장된 파일 경로
+  fileSize        Int       // 파일 크기 (bytes)
+  mimeType        String    // MIME 타입 (application/pdf, image/jpeg 등)
+  createdAt       DateTime  @default(now())
+
+  transaction     Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+}
+
+// BankConnection - 은행 API 연결 정보
+model BankConnection {
+  id                String    @id @default(cuid())
+  bankName          String    // "Vivid Money"
+  connectionType    String    // "api" | "csv"
+  status            String    @default("active") // "active" | "error" | "disconnected"
+
+  // API 연결 정보 (finAPI)
+  accessToken       String?   // 암호화된 액세스 토큰
+  refreshToken      String?   // 암호화된 리프레시 토큰
+  tokenExpiresAt    DateTime?
+  externalAccountId String?   // finAPI의 계좌 ID
+
+  // 동기화 정보
+  lastSyncAt        DateTime?
+  lastSyncStatus    String?   // "success" | "error"
+  lastSyncError     String?   // 에러 메시지
+  autoSync          Boolean   @default(false)
+  syncFrequency     Int       @default(3600) // 초 단위 (기본: 1시간)
+
+  bankAccountId     String    @unique
+  bankAccount       BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([lastSyncAt])
+}
+
+// Settings - 애플리케이션 설정 (단일 사용자용)
+model Settings {
+  id              String    @id @default(cuid())
+  companyName     String?   // 회사명
+  taxNumber       String?   // 세금번호
+  vatId           String?   // VAT ID
+  address         String?   // 주소
+  defaultVatRate  Float     @default(19) // 기본 VAT 세율
+  fiscalYearStart Int       @default(1)  // 회계연도 시작 월
+
+  // 견적서/인보이스 번호 설정
+  quotePrefix     String    @default("BM-ANB")
+  invoicePrefix   String    @default("BM")
+  numberFormat    String    @default("YEAR")  // "YEAR" | "CONTINUOUS" | "MONTH"
+  numberPadding   Int       @default(3)       // 001, 002, 003
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// NumberSequence - 번호 카운터 관리 (견적서, 인보이스, 고객)
+model NumberSequence {
+  id              String    @id @default(cuid())
+  type            String    // "quote" | "invoice" | "customer"
+  year            Int       // 2026, 2027 (연도별 리셋용, 0 = 연도 무관)
+  month           Int       @default(0)  // 1-12 (월별 리셋용, 0 = 월 무관)
+  lastNumber      Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([type, year, month])
+  @@index([type, year])
+}
+
+// Customer - 고객 정보
+model Customer {
+  id              String    @id @default(cuid())
+  customerNumber  String    @unique  // KD-001
+  name            String
+  email           String?
+  company         String?
+  address         String?
+  postalCode      String?
+  city            String?
+  country         String    @default("DE")
+  vatId           String?   // EU B2B용
+  taxExempt       Boolean   @default(false)
+
+  quotes          Quote[]
+  invoices        Invoice[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+}
+
+// Quote - 견적서
+model Quote {
+  id              String    @id @default(cuid())
+  quoteNumber     String    @unique  // BM-ANB-2026-001
+  version         Int       @default(1)
+  customerId      String
+  status          String    @default("draft")  // draft, sent, accepted, rejected, expired
+
+  // 버전 관리
+  originalQuoteId String?
+  supersededById  String?   @unique
+
+  items           QuoteItem[]
+
+  subtotal        Float     @default(0)
+  totalVat        Float     @default(0)
+  totalGross      Float     @default(0)
+
+  validUntil      DateTime
+  notes           String?
+  terms           String?
+
+  // AI 컨설팅
+  aiSuggestions   String?   // JSON 저장
+
+  sentAt          DateTime?
+  acceptedAt      DateTime?
+
+  // 수정 제어
+  isEditable      Boolean   @default(true)
+  lastEditedAt    DateTime?
+  editHistory     String?   // JSON
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customer        Customer  @relation(fields: [customerId], references: [id])
+  invoice         Invoice?
+
+  originalQuote   Quote?    @relation("QuoteVersions", fields: [originalQuoteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  revisions       Quote[]   @relation("QuoteVersions")
+  supersededBy    Quote?    @relation("QuoteSupersession", fields: [supersededById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supersedes      Quote?    @relation("QuoteSupersession")
+
+  @@index([customerId])
+  @@index([status])
+  @@index([quoteNumber])
+}
+
+// QuoteItem - 견적서 항목
+model QuoteItem {
+  id              String    @id @default(cuid())
+  quoteId         String
+
+  description     String
+  quantity        Float     @default(1)
+  unit            String    @default("Stück")
+  unitPrice       Float
+  vatRate         Float     @default(19)
+
+  subtotal        Float
+  vatAmount       Float
+  total           Float
+
+  sortOrder       Int       @default(0)
+
+  quote           Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+}
+
+// Invoice - 인보이스
+model Invoice {
+  id              String    @id @default(cuid())
+  invoiceNumber   String    @unique  // BM-2026-001
+  customerId      String
+  quoteId         String?   @unique
+
+  status          String    @default("draft")  // draft, sent, paid, overdue, cancelled
+
+  items           InvoiceItem[]
+
+  subtotal        Float     @default(0)
+  totalVat        Float     @default(0)
+  totalGross      Float     @default(0)
+
+  // 독일 법적 필수 항목
+  invoiceDate     DateTime  @default(now())
+  deliveryDate    DateTime?
+  dueDate         DateTime
+  paymentTerms    String    @default("14 Tage netto")
+
+  // 결제 정보
+  paidAt          DateTime?
+  paidAmount      Float     @default(0)
+  paymentMethod   String?
+
+  // 거래내역 매칭
+  transactionId   String?   @unique
+
+  notes           String?
+  terms           String?
+
+  // 수정 제어 (독일 세법)
+  isEditable      Boolean   @default(true)
+  isLocked        Boolean   @default(false)
+  lockedAt        DateTime?
+
+  // 취소/정정 (Storno/Korrektur)
+  isCancelled     Boolean   @default(false)
+  cancelledAt     DateTime?
+  cancellationReason String?
+
+  correctionType  String?   // "cancellation" | "correction"
+  correctsId      String?   @unique
+  correctedById   String?   @unique
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customer        Customer     @relation(fields: [customerId], references: [id])
+  quote           Quote?       @relation(fields: [quoteId], references: [id])
+  transaction     Transaction? @relation(fields: [transactionId], references: [id])
+
+  corrects        Invoice?     @relation("InvoiceCorrection", fields: [correctsId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  correctedBy     Invoice?     @relation("InvoiceCorrection")
+
+  @@index([customerId])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([invoiceDate])
+  @@index([dueDate])
+}
+
+// InvoiceItem - 인보이스 항목
+model InvoiceItem {
+  id              String    @id @default(cuid())
+  invoiceId       String
+
+  description     String
+  quantity        Float     @default(1)
+  unit            String    @default("Stück")
+  unitPrice       Float
+  vatRate         Float     @default(19)
+
+  subtotal        Float
+  vatAmount       Float
+  total           Float
+
+  sortOrder       Int       @default(0)
+
+  invoice         Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
