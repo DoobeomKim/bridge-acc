@@ -15,72 +15,115 @@ import {
 
 // Noto Sans KR 폰트 등록 (한글 지원)
 // 서버사이드에서 실행되므로 절대 경로 사용
+// 여러 웨이트 등록
 Font.register({
   family: 'Noto Sans KR',
   src: `${process.cwd()}/public/fonts/NotoSansKR-Regular.ttf`,
+  fontWeight: 400,
+});
+
+Font.register({
+  family: 'Noto Sans KR',
+  src: `${process.cwd()}/public/fonts/NotoSansKR-Medium.ttf`,
+  fontWeight: 500,
+});
+
+Font.register({
+  family: 'Noto Sans KR',
+  src: `${process.cwd()}/public/fonts/NotoSansKR-Bold.ttf`,
+  fontWeight: 700,
 });
 
 // 스타일 정의 (Invoice와 동일)
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    paddingTop: 30,
+    paddingBottom: 80, // 푸터 공간 확보
+    paddingHorizontal: 40,
     fontSize: 10,
     fontFamily: 'Noto Sans KR',
+    fontWeight: 500, // Medium 웨이트 사용
   },
-  header: {
-    marginBottom: 30,
-  },
-  companyName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  companyInfo: {
-    fontSize: 9,
-    color: '#666',
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    marginTop: 30,
-  },
-  quoteInfo: {
+  topSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 12,
   },
-  infoBlock: {
+  topBlock: {
     width: '48%',
   },
-  infoLabel: {
+  companyName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 3,
+  },
+  companyInfo: {
+    fontSize: 8,
+    color: '#666',
+    marginBottom: 1,
+  },
+  customerLabel: {
     fontSize: 8,
     color: '#666',
     marginBottom: 2,
   },
+  customerInfo: {
+    fontSize: 9,
+    marginBottom: 1,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    marginTop: 5,
+  },
+  quoteInfo: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 20,
+    marginBottom: 12,
+    paddingVertical: 6,
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderColor: '#ddd',
+  },
+  infoBlock: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  infoLabel: {
+    fontSize: 8,
+    color: '#666',
+    marginRight: 4,
+  },
   infoValue: {
     fontSize: 10,
-    marginBottom: 8,
+    fontWeight: 500,
   },
   table: {
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 12,
+    marginBottom: 12,
   },
   tableHeader: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#000',
-    paddingBottom: 5,
-    marginBottom: 5,
+    paddingBottom: 4,
+    marginBottom: 4,
     fontWeight: 'bold',
     fontSize: 9,
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderBottomWidth: 0.5,
     borderBottomColor: '#ccc',
+  },
+  additionalInfo: {
+    fontSize: 7,
+    color: '#666',
+    marginTop: 2,
+    fontWeight: 400, // Regular weight for additional info
   },
   col1: { width: '5%' },
   col2: { width: '40%' },
@@ -92,12 +135,12 @@ const styles = StyleSheet.create({
   totals: {
     marginLeft: 'auto',
     width: '40%',
-    marginTop: 10,
+    marginTop: 8,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 3,
+    paddingVertical: 2,
   },
   totalLabel: {
     fontSize: 10,
@@ -109,31 +152,35 @@ const styles = StyleSheet.create({
   grandTotal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderTopWidth: 1,
     borderTopColor: '#000',
-    marginTop: 5,
+    marginTop: 4,
     fontWeight: 'bold',
     fontSize: 12,
   },
   notes: {
-    marginTop: 20,
+    marginTop: 12,
     fontSize: 9,
   },
   notesTitle: {
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   footer: {
     position: 'absolute',
     bottom: 30,
     left: 40,
     right: 40,
-    fontSize: 8,
+    fontSize: 7,
     color: '#666',
     borderTopWidth: 0.5,
     borderTopColor: '#ccc',
-    paddingTop: 10,
+    paddingTop: 6,
+    lineHeight: 1.3,
+  },
+  footerRow: {
+    marginBottom: 1.5,
   },
 });
 
@@ -158,6 +205,7 @@ interface QuotePDFProps {
     };
     items: Array<{
       description: string;
+      additionalInfo?: string;
       quantity: number;
       unit: string;
       unitPrice: number;
@@ -170,6 +218,11 @@ interface QuotePDFProps {
     address?: string;
     taxNumber?: string;
     vatId?: string;
+    hrb?: string;
+    managingDirector?: string;
+    bankName?: string;
+    iban?: string;
+    bic?: string;
   };
 }
 
@@ -188,37 +241,40 @@ export const QuotePDF: React.FC<QuotePDFProps> = ({ quote, settings }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* 회사 헤더 */}
-        <View style={styles.header}>
-          <Text style={styles.companyName}>
-            {settings.companyName || 'Bridge Acc'}
-          </Text>
-          {settings.address && (
-            <Text style={styles.companyInfo}>{settings.address}</Text>
-          )}
-          {settings.taxNumber && (
-            <Text style={styles.companyInfo}>Steuernummer: {settings.taxNumber}</Text>
-          )}
-          {settings.vatId && (
-            <Text style={styles.companyInfo}>USt-IdNr.: {settings.vatId}</Text>
-          )}
-        </View>
-
-        {/* 고객 정보 */}
-        <View>
-          <Text style={styles.infoLabel}>Empfänger</Text>
-          <Text style={styles.infoValue}>{quote.customer.name}</Text>
-          {quote.customer.company && (
-            <Text style={styles.infoValue}>{quote.customer.company}</Text>
-          )}
-          {quote.customer.address && (
-            <Text style={styles.infoValue}>{quote.customer.address}</Text>
-          )}
-          {quote.customer.postalCode && quote.customer.city && (
-            <Text style={styles.infoValue}>
-              {quote.customer.postalCode} {quote.customer.city}
+        {/* 상단 섹션: 회사 정보 + 고객 정보 */}
+        <View style={styles.topSection}>
+          {/* 회사 정보 (좌측) */}
+          <View style={styles.topBlock}>
+            <Text style={styles.companyName}>
+              {settings.companyName || 'Bridge Acc'}
             </Text>
-          )}
+            {settings.address && (
+              <Text style={styles.companyInfo}>{settings.address}</Text>
+            )}
+            {settings.taxNumber && (
+              <Text style={styles.companyInfo}>Steuernummer: {settings.taxNumber}</Text>
+            )}
+            {settings.vatId && (
+              <Text style={styles.companyInfo}>USt-IdNr.: {settings.vatId}</Text>
+            )}
+          </View>
+
+          {/* 고객 정보 (우측) */}
+          <View style={styles.topBlock}>
+            <Text style={styles.customerLabel}>Empfänger</Text>
+            <Text style={styles.customerInfo}>{quote.customer.name}</Text>
+            {quote.customer.company && (
+              <Text style={styles.customerInfo}>{quote.customer.company}</Text>
+            )}
+            {quote.customer.address && (
+              <Text style={styles.customerInfo}>{quote.customer.address}</Text>
+            )}
+            {quote.customer.postalCode && quote.customer.city && (
+              <Text style={styles.customerInfo}>
+                {quote.customer.postalCode} {quote.customer.city}
+              </Text>
+            )}
+          </View>
         </View>
 
         {/* 제목 */}
@@ -227,20 +283,16 @@ export const QuotePDF: React.FC<QuotePDFProps> = ({ quote, settings }) => {
         {/* 견적서 정보 */}
         <View style={styles.quoteInfo}>
           <View style={styles.infoBlock}>
-            <View>
-              <Text style={styles.infoLabel}>Angebotsdatum</Text>
-              <Text style={styles.infoValue}>{formatDate(quote.createdAt)}</Text>
-            </View>
-            <View>
-              <Text style={styles.infoLabel}>Kundennummer</Text>
-              <Text style={styles.infoValue}>{quote.customer.customerNumber}</Text>
-            </View>
+            <Text style={styles.infoLabel}>Angebotsdatum:</Text>
+            <Text style={styles.infoValue}>{formatDate(quote.createdAt)}</Text>
           </View>
           <View style={styles.infoBlock}>
-            <View>
-              <Text style={styles.infoLabel}>Gültig bis</Text>
-              <Text style={styles.infoValue}>{formatDate(quote.validUntil)}</Text>
-            </View>
+            <Text style={styles.infoLabel}>Gültig bis:</Text>
+            <Text style={styles.infoValue}>{formatDate(quote.validUntil)}</Text>
+          </View>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoLabel}>Kundennummer:</Text>
+            <Text style={styles.infoValue}>{quote.customer.customerNumber}</Text>
           </View>
         </View>
 
@@ -258,7 +310,12 @@ export const QuotePDF: React.FC<QuotePDFProps> = ({ quote, settings }) => {
           {quote.items.map((item, index) => (
             <View key={index} style={styles.tableRow}>
               <Text style={styles.col1}>{index + 1}</Text>
-              <Text style={styles.col2}>{item.description}</Text>
+              <View style={styles.col2}>
+                <Text>{item.description}</Text>
+                {item.additionalInfo && (
+                  <Text style={styles.additionalInfo}>{item.additionalInfo}</Text>
+                )}
+              </View>
               <Text style={styles.col3}>{item.quantity}</Text>
               <Text style={styles.col4}>{item.unit}</Text>
               <Text style={styles.col5}>{formatCurrency(item.unitPrice)}</Text>
@@ -302,11 +359,25 @@ export const QuotePDF: React.FC<QuotePDFProps> = ({ quote, settings }) => {
 
         {/* 푸터 */}
         <View style={styles.footer}>
-          <Text>
+          {/* 법적 정보 */}
+          {(settings.hrb || settings.managingDirector) && (
+            <Text style={styles.footerRow}>
+              {settings.hrb && `HRB ${settings.hrb}`}
+              {settings.hrb && settings.managingDirector && ' | '}
+              {settings.managingDirector && `Geschäftsführer: ${settings.managingDirector}`}
+            </Text>
+          )}
+          {(settings.bankName || settings.iban || settings.bic) && (
+            <Text style={styles.footerRow}>
+              {settings.bankName && `Bank: ${settings.bankName}`}
+              {settings.bankName && settings.iban && ' | '}
+              {settings.iban && `IBAN: ${settings.iban}`}
+              {settings.iban && settings.bic && ' | '}
+              {settings.bic && `BIC: ${settings.bic}`}
+            </Text>
+          )}
+          <Text style={{ marginTop: 4 }}>
             Vielen Dank für Ihr Interesse. Wir freuen uns auf Ihre Rückmeldung.
-          </Text>
-          <Text style={{ marginTop: 5 }}>
-            {settings.companyName || 'Bridge Acc'} | Erstellt mit Bridge Acc
           </Text>
         </View>
       </Page>

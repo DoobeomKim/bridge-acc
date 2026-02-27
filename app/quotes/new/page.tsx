@@ -18,6 +18,7 @@ interface Customer {
 
 interface QuoteItem {
   description: string;
+  additionalInfo?: string;
   quantity: number;
   unit: string;
   unitPrice: number;
@@ -41,6 +42,7 @@ export default function NewQuotePage() {
   const [items, setItems] = useState<QuoteItem[]>([
     {
       description: '',
+      additionalInfo: '',
       quantity: 1,
       unit: 'Stück',
       unitPrice: 0,
@@ -77,6 +79,7 @@ export default function NewQuotePage() {
       ...items,
       {
         description: '',
+        additionalInfo: '',
         quantity: 1,
         unit: 'Stück',
         unitPrice: 0,
@@ -277,6 +280,21 @@ export default function NewQuotePage() {
                         required
                         className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                         placeholder="z.B. Webentwicklung, Beratung, etc."
+                      />
+                    </div>
+
+                    <div className="col-span-12">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                        Zusätzliche Informationen (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={item.additionalInfo || ''}
+                        onChange={(e) =>
+                          updateItem(index, 'additionalInfo', e.target.value)
+                        }
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-600"
+                        placeholder="z.B. Details zur Position, Hinweise für den Kunden..."
                       />
                     </div>
 

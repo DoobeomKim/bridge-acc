@@ -16,6 +16,7 @@ export default function NewCustomerPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     company: '',
     address: '',
     postalCode: '',
@@ -131,6 +132,20 @@ export default function NewCustomerPage() {
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="max@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefon
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  placeholder="+49 123 456789"
                 />
               </div>
             </div>

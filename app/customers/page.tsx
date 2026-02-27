@@ -12,6 +12,7 @@ interface Customer {
   customerNumber: string;
   name: string;
   email?: string;
+  phone?: string;
   company?: string;
   city?: string;
   _count?: {
@@ -138,6 +139,9 @@ export default function CustomersPage() {
                     E-Mail
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">
+                    Telefon
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">
                     Stadt
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase">
@@ -165,6 +169,9 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {customer.email || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {customer.phone || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {customer.city || '-'}

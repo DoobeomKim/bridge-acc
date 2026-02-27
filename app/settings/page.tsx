@@ -4,7 +4,10 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CompanySettings } from '@/components/settings/company-settings'
 import { BankConnections } from '@/components/settings/bank-connections'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Shield, Check } from 'lucide-react'
+
+type SessionDuration = '24h' | '7d' | '30d-sliding'
 
 interface Settings {
   companyName: string | null
@@ -13,7 +16,19 @@ interface Settings {
   address: string | null
   defaultVatRate: number
   fiscalYearStart: number
+  hrb: string | null
+  managingDirector: string | null
+  bankName: string | null
+  iban: string | null
+  bic: string | null
+  sessionDuration: SessionDuration
 }
+
+const SESSION_OPTIONS: { value: SessionDuration; label: string; desc: string }[] = [
+  { value: '24h', label: '24시간', desc: '매일 재로그인 필요. 보안 최우선.' },
+  { value: '7d', label: '7일', desc: '일주일마다 재로그인. 권장 설정.' },
+  { value: '30d-sliding', label: '30일 (자동 연장)', desc: '사용할 때마다 30일 연장. 거의 안 끊김.' },
+]
 
 interface BankConnection {
   id: string
@@ -27,6 +42,88 @@ interface BankConnection {
     accountName: string
     iban: string | null
   }
+}
+
+function SecuritySettings({ sessionDuration, onSaved }: {
+  sessionDuration: SessionDuration
+  onSaved: () => void
+}) {
+  const [selected, setSelected] = useState<SessionDuration>(sessionDuration)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  async function handleSave() {
+    if (selected === sessionDuration) return
+    setSaving(true)
+    try {
+      await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionDuration: selected }),
+      })
+      setSaved(true)
+      onSaved()
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Shield className="w-4 h-4" />
+          보안 설정
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <p className="text-sm font-medium mb-3">로그인 세션 유지 시간</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            다음 로그인부터 적용됩니다.
+          </p>
+          <div className="space-y-2">
+            {SESSION_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selected === opt.value
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="sessionDuration"
+                  value={opt.value}
+                  checked={selected === opt.value}
+                  onChange={() => setSelected(opt.value)}
+                  className="mt-0.5 accent-blue-600"
+                />
+                <div>
+                  <p className="text-sm font-medium">{opt.label}</p>
+                  <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving || selected === sessionDuration}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {saved ? (
+            <>
+              <Check className="w-4 h-4" />
+              저장됨
+            </>
+          ) : saving ? '저장 중...' : '저장'}
+        </button>
+      </CardContent>
+    </Card>
+  )
 }
 
 function SettingsContent() {
@@ -239,12 +336,18 @@ function SettingsContent() {
 
       <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
         <CompanySettings settings={settings} onSaved={fetchSettings} />
-        <BankConnections
-          connections={connections}
-          onSync={handleSync}
-          onDisconnect={handleDisconnect}
-          onConnect={connecting ? undefined : handleConnect}
-        />
+        <div className="space-y-8">
+          <SecuritySettings
+            sessionDuration={settings.sessionDuration || '7d'}
+            onSaved={fetchSettings}
+          />
+          <BankConnections
+            connections={connections}
+            onSync={handleSync}
+            onDisconnect={handleDisconnect}
+            onConnect={connecting ? undefined : handleConnect}
+          />
+        </div>
       </div>
     </div>
   )

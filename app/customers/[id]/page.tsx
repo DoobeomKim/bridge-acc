@@ -13,6 +13,7 @@ interface Customer {
   customerNumber: string;
   name: string;
   email?: string;
+  phone?: string;
   company?: string;
   address?: string;
   postalCode?: string;
@@ -200,6 +201,16 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                <input
+                  type="tel"
+                  value={formData.phone || ''}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Firma</label>
                 <input
                   type="text"
@@ -234,6 +245,10 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
                 <div>
                   <dt className="text-sm text-gray-600">E-Mail</dt>
                   <dd className="font-medium">{customer.email || '-'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-gray-600">Telefon</dt>
+                  <dd className="font-medium">{customer.phone || '-'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-gray-600">Stadt</dt>

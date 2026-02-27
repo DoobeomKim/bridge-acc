@@ -94,6 +94,7 @@ export async function POST(request: Request) {
 
       return {
         description: item.description,
+        additionalInfo: item.additionalInfo || undefined,
         quantity: item.quantity,
         unit: item.unit || 'Stück',
         unitPrice: item.unitPrice,

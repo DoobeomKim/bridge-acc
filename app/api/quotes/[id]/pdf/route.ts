@@ -65,6 +65,7 @@ export async function GET(request: Request, { params }: RouteParams) {
           },
           items: quote.items.map((item) => ({
             description: item.description,
+            additionalInfo: item.additionalInfo || undefined,
             quantity: item.quantity,
             unit: item.unit,
             unitPrice: item.unitPrice,
@@ -77,6 +78,11 @@ export async function GET(request: Request, { params }: RouteParams) {
           address: settings?.address || undefined,
           taxNumber: settings?.taxNumber || undefined,
           vatId: settings?.vatId || undefined,
+          hrb: settings?.hrb || undefined,
+          managingDirector: settings?.managingDirector || undefined,
+          bankName: settings?.bankName || undefined,
+          iban: settings?.iban || undefined,
+          bic: settings?.bic || undefined,
         },
       })
     );

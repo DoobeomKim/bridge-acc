@@ -40,7 +40,20 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
 
-    const { companyName, taxNumber, vatId, address, defaultVatRate, fiscalYearStart } = body
+    const {
+      companyName,
+      taxNumber,
+      vatId,
+      address,
+      defaultVatRate,
+      fiscalYearStart,
+      hrb,
+      managingDirector,
+      bankName,
+      iban,
+      bic,
+      sessionDuration,
+    } = body
 
     // 기존 설정 찾기
     let settings = await prisma.settings.findFirst()
@@ -52,6 +65,12 @@ export async function PATCH(request: NextRequest) {
       address?: string | null
       defaultVatRate?: number
       fiscalYearStart?: number
+      hrb?: string | null
+      managingDirector?: string | null
+      bankName?: string | null
+      iban?: string | null
+      bic?: string | null
+      sessionDuration?: string
     } = {}
 
     if (companyName !== undefined) updateData.companyName = companyName || null
@@ -60,6 +79,14 @@ export async function PATCH(request: NextRequest) {
     if (address !== undefined) updateData.address = address || null
     if (defaultVatRate !== undefined) updateData.defaultVatRate = defaultVatRate
     if (fiscalYearStart !== undefined) updateData.fiscalYearStart = fiscalYearStart
+    if (hrb !== undefined) updateData.hrb = hrb || null
+    if (managingDirector !== undefined) updateData.managingDirector = managingDirector || null
+    if (bankName !== undefined) updateData.bankName = bankName || null
+    if (iban !== undefined) updateData.iban = iban || null
+    if (bic !== undefined) updateData.bic = bic || null
+    if (sessionDuration !== undefined && ['24h', '7d', '30d-sliding'].includes(sessionDuration)) {
+      updateData.sessionDuration = sessionDuration
+    }
 
     if (settings) {
       // 업데이트

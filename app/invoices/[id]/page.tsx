@@ -23,6 +23,7 @@ interface Invoice {
   items: Array<{
     id: string;
     description: string;
+    additionalInfo?: string;
     quantity: number;
     unit: string;
     unitPrice: number;
@@ -442,7 +443,14 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                 {invoice.items.map((item, index) => (
                   <tr key={item.id}>
                     <td className="py-3 text-sm">{index + 1}</td>
-                    <td className="py-3 text-sm">{item.description}</td>
+                    <td className="py-3 text-sm">
+                      <div>{item.description}</div>
+                      {item.additionalInfo && (
+                        <div className="text-xs text-gray-500 mt-1 italic">
+                          {item.additionalInfo}
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 text-sm text-right">
                       {item.quantity} {item.unit}
                     </td>

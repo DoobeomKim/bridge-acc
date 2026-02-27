@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     const {
       name,
       email,
+      phone,
       company,
       address,
       postalCode,
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
         customerNumber,
         name,
         email,
+        phone,
         company,
         address,
         postalCode,

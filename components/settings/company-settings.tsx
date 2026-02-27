@@ -15,6 +15,11 @@ interface CompanySettingsProps {
     address: string | null
     defaultVatRate: number
     fiscalYearStart: number
+    hrb: string | null
+    managingDirector: string | null
+    bankName: string | null
+    iban: string | null
+    bic: string | null
   }
   onSaved?: () => void
 }
@@ -25,6 +30,11 @@ export function CompanySettings({ settings, onSaved }: CompanySettingsProps) {
   const [vatId, setVatId] = useState(settings.vatId || '')
   const [address, setAddress] = useState(settings.address || '')
   const [defaultVatRate, setDefaultVatRate] = useState(settings.defaultVatRate.toString())
+  const [hrb, setHrb] = useState(settings.hrb || '')
+  const [managingDirector, setManagingDirector] = useState(settings.managingDirector || '')
+  const [bankName, setBankName] = useState(settings.bankName || '')
+  const [iban, setIban] = useState(settings.iban || '')
+  const [bic, setBic] = useState(settings.bic || '')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -44,6 +54,11 @@ export function CompanySettings({ settings, onSaved }: CompanySettingsProps) {
           vatId: vatId || null,
           address: address || null,
           defaultVatRate: parseFloat(defaultVatRate),
+          hrb: hrb || null,
+          managingDirector: managingDirector || null,
+          bankName: bankName || null,
+          iban: iban || null,
+          bic: bic || null,
         }),
       })
 
@@ -129,6 +144,72 @@ export function CompanySettings({ settings, onSaved }: CompanySettingsProps) {
           <p className="text-xs text-muted-foreground">
             독일: 0% (면세), 7% (감면), 19% (표준)
           </p>
+        </div>
+
+        {/* 법적 정보 섹션 */}
+        <div className="pt-4 border-t">
+          <h3 className="text-sm font-medium mb-3">법적 정보 (PDF 푸터용)</h3>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="hrb">HRB (상업등록번호)</Label>
+              <Input
+                id="hrb"
+                value={hrb}
+                onChange={(e) => setHrb(e.target.value)}
+                placeholder="예: 10534"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="managingDirector">대표이사 (Geschäftsführer)</Label>
+              <Input
+                id="managingDirector"
+                value={managingDirector}
+                onChange={(e) => setManagingDirector(e.target.value)}
+                placeholder="예: Eu Ra Jung"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 은행 정보 섹션 */}
+        <div className="pt-4 border-t">
+          <h3 className="text-sm font-medium mb-3">은행 정보 (PDF 푸터용)</h3>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bankName">은행명 (Bank)</Label>
+              <Input
+                id="bankName"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                placeholder="예: Vivid Money S.A."
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="iban">IBAN</Label>
+                <Input
+                  id="iban"
+                  value={iban}
+                  onChange={(e) => setIban(e.target.value)}
+                  placeholder="예: DE72 2022 0800 0052 0192 95"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bic">BIC/SWIFT</Label>
+                <Input
+                  id="bic"
+                  value={bic}
+                  onChange={(e) => setBic(e.target.value)}
+                  placeholder="예: SXPYDEHHXXX"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {message && (

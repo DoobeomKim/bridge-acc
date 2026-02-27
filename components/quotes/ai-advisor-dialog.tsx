@@ -85,6 +85,7 @@ export function AIAdvisorDialog({ isOpen, onClose, onApply }: Props) {
 
     const items = advice.items.map((item) => ({
       description: item.description,
+      additionalInfo: item.reasoning, // AI 부가설명 저장
       quantity: item.quantity,
       unit: item.unit,
       unitPrice: item.unitPrice,

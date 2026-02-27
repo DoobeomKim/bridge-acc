@@ -63,6 +63,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const {
       name,
       email,
+      phone,
       company,
       address,
       postalCode,
@@ -92,6 +93,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       data: {
         ...(name !== undefined && { name }),
         ...(email !== undefined && { email }),
+        ...(phone !== undefined && { phone }),
         ...(company !== undefined && { company }),
         ...(address !== undefined && { address }),
         ...(postalCode !== undefined && { postalCode }),

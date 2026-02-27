@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { LogOut } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: '📊' },
@@ -15,6 +16,16 @@ const navigation = [
 
 export function Navbar() {
   const pathname = usePathname()
+  const router = useRouter()
+
+  // 로그인 페이지에서는 Navbar 숨김
+  if (pathname === '/login') return null
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+    router.refresh()
+  }
 
   return (
     <nav className="border-b bg-white">
@@ -47,9 +58,17 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground hidden md:block">
               독일 GmbH 회계 관리
             </span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+              title="로그아웃"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden md:block">로그아웃</span>
+            </button>
           </div>
         </div>
 
