@@ -56,6 +56,7 @@ export async function POST(request: Request) {
       country = 'DE',
       vatId,
       taxExempt = false,
+      notes,
     } = body;
 
     // 필수 필드 검증
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
         country,
         vatId,
         taxExempt,
+        notes,
       },
     });
 

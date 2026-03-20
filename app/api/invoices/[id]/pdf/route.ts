@@ -78,6 +78,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         },
         settings: {
           companyName: settings?.companyName || undefined,
+          email: settings?.email || undefined,
           address: settings?.address || undefined,
           taxNumber: settings?.taxNumber || undefined,
           vatId: settings?.vatId || undefined,

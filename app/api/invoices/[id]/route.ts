@@ -75,6 +75,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const body = await request.json();
     const {
       items,
+      invoiceNumber,
       invoiceDate,
       deliveryDate,
       dueDate,
@@ -108,6 +109,25 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
+    // 인보이스 번호 중복 체크 (초안만 수정 가능)
+    if (invoiceNumber && invoiceNumber !== existing.invoiceNumber) {
+      if (existing.isLocked) {
+        return NextResponse.json(
+          { error: '발송된 인보이스의 번호는 수정할 수 없습니다.' },
+          { status: 400 }
+        );
+      }
+      const duplicate = await prisma.invoice.findFirst({
+        where: { invoiceNumber, NOT: { id: params.id } },
+      });
+      if (duplicate) {
+        return NextResponse.json(
+          { error: `인보이스 번호 "${invoiceNumber}"는 이미 사용 중입니다.` },
+          { status: 400 }
+        );
+      }
+    }
+
     // draft가 아닌 인보이스는 항목 수정 불가
     if (existing.status !== 'draft' && items) {
       return NextResponse.json(
@@ -118,6 +138,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     // 항목 업데이트가 있으면 재계산
     let updateData: any = {
+      ...(invoiceNumber !== undefined && invoiceNumber !== existing.invoiceNumber && { invoiceNumber }),
       ...(invoiceDate !== undefined && { invoiceDate: new Date(invoiceDate) }),
       ...(deliveryDate !== undefined && { deliveryDate: deliveryDate ? new Date(deliveryDate) : null }),
       ...(dueDate !== undefined && { dueDate: new Date(dueDate) }),
@@ -142,10 +163,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
         return {
           description: item.description,
+          additionalInfo: item.additionalInfo || null,
           quantity: item.quantity,
           unit: item.unit || 'Stück',
           unitPrice: item.unitPrice,
-          vatRate: item.vatRate || 19,
+          vatRate: item.vatRate ?? 19,
           subtotal,
           vatAmount,
           total,

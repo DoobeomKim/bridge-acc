@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CsvUpload } from '@/components/transactions/csv-upload'
 import { SyncButton } from '@/components/transactions/sync-button'
 import { TransactionTable } from '@/components/transactions/transaction-table'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -15,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { CATEGORY_LABELS } from '@/types'
+import { Search, X } from 'lucide-react'
 
 interface Transaction {
   id: string
@@ -52,10 +51,7 @@ export default function TransactionsPage() {
 
       const response = await fetch(`/api/transactions?${params.toString()}`)
       const data = await response.json()
-
-      if (data.success) {
-        setTransactions(data.data)
-      }
+      if (data.success) setTransactions(data.data)
     } catch (error) {
       console.error('Error fetching transactions:', error)
     } finally {
@@ -68,10 +64,6 @@ export default function TransactionsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSearch = () => {
-    fetchTransactions()
-  }
-
   const handleReset = () => {
     setSearch('')
     setCategoryFilter('')
@@ -81,6 +73,8 @@ export default function TransactionsPage() {
     setTimeout(() => fetchTransactions(), 0)
   }
 
+  const hasFilters = search || (categoryFilter && categoryFilter !== 'all') || (typeFilter && typeFilter !== 'all') || startDate || endDate
+
   const handleExportCSV = () => {
     const params = new URLSearchParams()
     if (search) params.append('search', search)
@@ -88,7 +82,6 @@ export default function TransactionsPage() {
     if (typeFilter && typeFilter !== 'all') params.append('type', typeFilter)
     if (startDate) params.append('startDate', startDate)
     if (endDate) params.append('endDate', endDate)
-
     window.open(`/api/transactions/export?${params.toString()}`, '_blank')
   }
 
@@ -99,22 +92,16 @@ export default function TransactionsPage() {
     if (typeFilter && typeFilter !== 'all') params.append('type', typeFilter)
     if (startDate) params.append('startDate', startDate)
     if (endDate) params.append('endDate', endDate)
-
     window.open(`/api/transactions/download-attachments?${params.toString()}`, '_blank')
   }
 
   const handleDeduplicate = async () => {
-    if (!confirm('중복된 거래내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-      return
-    }
+    if (!confirm('중복된 거래내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return
 
     setDeduplicating(true)
     try {
-      const response = await fetch('/api/transactions/deduplicate', {
-        method: 'DELETE',
-      })
+      const response = await fetch('/api/transactions/deduplicate', { method: 'DELETE' })
       const data = await response.json()
-
       if (data.success) {
         alert(`중복 삭제 완료!\n전체: ${data.data.total}개\n중복: ${data.data.duplicates}개\n남은 거래: ${data.data.remaining}개`)
         fetchTransactions()
@@ -130,127 +117,105 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">거래내역 (Transaktionen)</h1>
-        <p className="text-muted-foreground">
-          은행 거래내역을 업로드하고 관리하세요
-        </p>
-      </div>
+    <div className="min-h-screen bg-zinc-50">
+      <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
 
-      {/* API Sync */}
-      <SyncButton onSyncComplete={fetchTransactions} />
+        {/* Header */}
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-900 tracking-tight">거래내역</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">은행 거래내역 업로드 및 관리</p>
+        </div>
 
-      {/* CSV Upload */}
-      <CsvUpload onUploadSuccess={fetchTransactions} />
+        {/* Upload & Sync */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <CsvUpload onUploadSuccess={fetchTransactions} />
+          <SyncButton onSyncComplete={fetchTransactions} />
+        </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>필터 및 검색</CardTitle>
-          <CardDescription>
-            거래내역을 검색하고 필터링하세요
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="설명, 상대방, 메모로 검색..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearch()
-                    }
-                  }}
-                />
-              </div>
-
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="유형 필터" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="income">수입만</SelectItem>
-                  <SelectItem value="expense">지출만</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="카테고리 필터" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button onClick={handleSearch}>검색</Button>
-              <Button variant="outline" onClick={handleReset}>
-                초기화
-              </Button>
+        {/* Filters */}
+        <div className="bg-white rounded-xl border border-zinc-200 p-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+              <Input
+                placeholder="설명, 거래처, 메모 검색..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchTransactions()}
+                className="pl-8 h-8 text-xs border-zinc-200 focus-visible:ring-zinc-900"
+              />
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-2 block">
-                  시작일
-                </label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-2 block">
-                  종료일
-                </label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[120px] h-8 text-xs border-zinc-200">
+                <SelectValue placeholder="유형" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                <SelectItem value="income">수입</SelectItem>
+                <SelectItem value="expense">지출</SelectItem>
+              </SelectContent>
+            </Select>
 
-      {/* Transactions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>거래내역 목록</CardTitle>
-          <CardDescription>
-            총 {transactions.length}개의 거래
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-sm text-muted-foreground">로딩 중...</p>
-            </div>
-          ) : (
-            <TransactionTable
-              transactions={transactions}
-              onTransactionUpdated={fetchTransactions}
-              onDeleteDuplicates={handleDeduplicate}
-              deletingDuplicates={deduplicating}
-              onExportCSV={handleExportCSV}
-              onDownloadAttachments={handleDownloadAttachments}
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[160px] h-8 text-xs border-zinc-200">
+                <SelectValue placeholder="카테고리" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-[140px] h-8 text-xs border-zinc-200"
             />
-          )}
-        </CardContent>
-      </Card>
+            <span className="text-xs text-zinc-400">~</span>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-[140px] h-8 text-xs border-zinc-200"
+            />
+
+            <button
+              onClick={fetchTransactions}
+              className="px-3 h-8 bg-zinc-900 text-white text-xs font-medium rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              검색
+            </button>
+
+            {hasFilters && (
+              <button
+                onClick={handleReset}
+                className="flex items-center gap-1 px-3 h-8 border border-zinc-200 text-zinc-500 text-xs font-medium rounded-lg hover:border-zinc-900 hover:text-zinc-900 transition-all"
+              >
+                <X className="w-3 h-3" /> 초기화
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
+          <TransactionTable
+            transactions={transactions}
+            loading={loading}
+            onTransactionUpdated={fetchTransactions}
+            onDeleteDuplicates={handleDeduplicate}
+            deletingDuplicates={deduplicating}
+            onExportCSV={handleExportCSV}
+            onDownloadAttachments={handleDownloadAttachments}
+          />
+        </div>
+
+      </div>
     </div>
   )
 }

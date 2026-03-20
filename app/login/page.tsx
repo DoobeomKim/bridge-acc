@@ -38,17 +38,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+    <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+      <div className="bg-white rounded-xl border border-zinc-200 p-8 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
-            <Lock className="w-6 h-6 text-blue-600" />
+          <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center mb-4">
+            <Lock className="w-5 h-5 text-zinc-700" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">Bridge Acc</h1>
-          <p className="text-sm text-gray-500 mt-1">패스워드를 입력하세요</p>
+          <h1 className="text-xl font-semibold text-zinc-900 tracking-tight">Bridge Acc</h1>
+          <p className="text-sm text-zinc-400 mt-1">패스워드를 입력하세요</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <input
             type="password"
             value={password}
@@ -56,17 +56,17 @@ export default function LoginPage() {
             placeholder="패스워드"
             autoFocus
             autoComplete="current-password"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-colors"
           />
 
           {error && (
-            <p className="text-sm text-red-600 text-center">{error}</p>
+            <p className="text-xs text-red-600 text-center">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading || !password}
-            className="w-full py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? '확인 중...' : '로그인'}
           </button>

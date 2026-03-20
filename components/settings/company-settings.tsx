@@ -1,15 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Check } from 'lucide-react'
 
 interface CompanySettingsProps {
   settings: {
     companyName: string | null
+    email: string | null
     taxNumber: string | null
     vatId: string | null
     address: string | null
@@ -26,6 +25,7 @@ interface CompanySettingsProps {
 
 export function CompanySettings({ settings, onSaved }: CompanySettingsProps) {
   const [companyName, setCompanyName] = useState(settings.companyName || '')
+  const [email, setEmail] = useState(settings.email || '')
   const [taxNumber, setTaxNumber] = useState(settings.taxNumber || '')
   const [vatId, setVatId] = useState(settings.vatId || '')
   const [address, setAddress] = useState(settings.address || '')
@@ -36,20 +36,19 @@ export function CompanySettings({ settings, onSaved }: CompanySettingsProps) {
   const [iban, setIban] = useState(settings.iban || '')
   const [bic, setBic] = useState(settings.bic || '')
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSave = async () => {
     setSaving(true)
-    setMessage(null)
-
+    setError(null)
     try {
       const response = await fetch('/api/settings', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyName: companyName || null,
+          email: email || null,
           taxNumber: taxNumber || null,
           vatId: vatId || null,
           address: address || null,
@@ -61,173 +60,124 @@ export function CompanySettings({ settings, onSaved }: CompanySettingsProps) {
           bic: bic || null,
         }),
       })
-
       const data = await response.json()
-
       if (data.success) {
-        setMessage({ type: 'success', text: '설정이 저장되었습니다' })
-        if (onSaved) onSaved()
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+        onSaved?.()
       } else {
         throw new Error(data.error)
       }
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : '저장 실패',
-      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '저장 실패')
     } finally {
       setSaving(false)
     }
   }
 
+  const inputClass = 'h-8 text-xs border-zinc-200 focus-visible:ring-zinc-900'
+  const labelClass = 'text-[10px] font-semibold uppercase tracking-widest text-zinc-400'
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>회사 정보 (Firmendaten)</CardTitle>
-        <CardDescription>
-          회사의 기본 정보를 입력하세요
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="companyName">회사명 (Firmenname)</Label>
-          <Input
-            id="companyName"
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="예: Meine GmbH"
-          />
+    <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
+      <div className="px-5 py-4 border-b border-zinc-100">
+        <h2 className="text-sm font-semibold text-zinc-900">회사 정보</h2>
+        <p className="text-xs text-zinc-400 mt-0.5">인보이스 및 PDF에 사용되는 정보</p>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="space-y-1.5">
+          <p className={labelClass}>회사명</p>
+          <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Meine GmbH" className={inputClass} />
+        </div>
+
+        <div className="space-y-1.5">
+          <p className={labelClass}>회사 이메일</p>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="info@meine-gmbh.de" className={inputClass} />
+          <p className="text-[11px] text-zinc-400">인보이스 및 견적서 PDF에 표시됩니다</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="taxNumber">세금번호 (Steuernummer)</Label>
-            <Input
-              id="taxNumber"
-              value={taxNumber}
-              onChange={(e) => setTaxNumber(e.target.value)}
-              placeholder="예: 123/456/78901"
-            />
+          <div className="space-y-1.5">
+            <p className={labelClass}>세금번호 (Steuernummer)</p>
+            <Input value={taxNumber} onChange={(e) => setTaxNumber(e.target.value)} placeholder="123/456/78901" className={inputClass} />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="vatId">VAT ID (USt-IdNr.)</Label>
-            <Input
-              id="vatId"
-              value={vatId}
-              onChange={(e) => setVatId(e.target.value)}
-              placeholder="예: DE123456789"
-            />
+          <div className="space-y-1.5">
+            <p className={labelClass}>VAT ID (USt-IdNr.)</p>
+            <Input value={vatId} onChange={(e) => setVatId(e.target.value)} placeholder="DE123456789" className={inputClass} />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="address">주소 (Adresse)</Label>
+        <div className="space-y-1.5">
+          <p className={labelClass}>주소</p>
           <Textarea
-            id="address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="예: Musterstraße 123, 10115 Berlin"
-            rows={3}
+            placeholder="Musterstraße 123, 10115 Berlin"
+            rows={2}
+            className="text-xs border-zinc-200 focus-visible:ring-zinc-900 resize-none"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="defaultVatRate">기본 VAT 세율 (%)</Label>
-          <Input
-            id="defaultVatRate"
-            type="number"
-            value={defaultVatRate}
-            onChange={(e) => setDefaultVatRate(e.target.value)}
-            placeholder="19"
-          />
-          <p className="text-xs text-muted-foreground">
-            독일: 0% (면세), 7% (감면), 19% (표준)
-          </p>
+        <div className="space-y-1.5">
+          <p className={labelClass}>기본 VAT 세율 (%)</p>
+          <div className="flex items-center gap-2">
+            <Input type="number" value={defaultVatRate} onChange={(e) => setDefaultVatRate(e.target.value)} placeholder="19" className={`w-24 ${inputClass}`} />
+            <span className="text-[11px] text-zinc-400">0% · 7% · 19% (DE 표준)</span>
+          </div>
         </div>
 
-        {/* 법적 정보 섹션 */}
-        <div className="pt-4 border-t">
-          <h3 className="text-sm font-medium mb-3">법적 정보 (PDF 푸터용)</h3>
-
+        {/* Legal Info */}
+        <div className="pt-4 border-t border-zinc-100 space-y-4">
+          <p className="text-xs font-semibold text-zinc-700">법적 정보 (PDF 푸터)</p>
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="hrb">HRB (상업등록번호)</Label>
-              <Input
-                id="hrb"
-                value={hrb}
-                onChange={(e) => setHrb(e.target.value)}
-                placeholder="예: 10534"
-              />
+            <div className="space-y-1.5">
+              <p className={labelClass}>HRB (상업등록번호)</p>
+              <Input value={hrb} onChange={(e) => setHrb(e.target.value)} placeholder="10534" className={inputClass} />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="managingDirector">대표이사 (Geschäftsführer)</Label>
-              <Input
-                id="managingDirector"
-                value={managingDirector}
-                onChange={(e) => setManagingDirector(e.target.value)}
-                placeholder="예: Eu Ra Jung"
-              />
+            <div className="space-y-1.5">
+              <p className={labelClass}>대표이사 (Geschäftsführer)</p>
+              <Input value={managingDirector} onChange={(e) => setManagingDirector(e.target.value)} placeholder="Eu Ra Jung" className={inputClass} />
             </div>
           </div>
         </div>
 
-        {/* 은행 정보 섹션 */}
-        <div className="pt-4 border-t">
-          <h3 className="text-sm font-medium mb-3">은행 정보 (PDF 푸터용)</h3>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="bankName">은행명 (Bank)</Label>
-              <Input
-                id="bankName"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                placeholder="예: Vivid Money S.A."
-              />
+        {/* Bank Info */}
+        <div className="pt-4 border-t border-zinc-100 space-y-4">
+          <p className="text-xs font-semibold text-zinc-700">은행 정보 (PDF 푸터)</p>
+          <div className="space-y-1.5">
+            <p className={labelClass}>은행명</p>
+            <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Vivid Money S.A." className={inputClass} />
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <p className={labelClass}>IBAN</p>
+              <Input value={iban} onChange={(e) => setIban(e.target.value)} placeholder="DE72 2022 0800 ..." className={inputClass} />
             </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="iban">IBAN</Label>
-                <Input
-                  id="iban"
-                  value={iban}
-                  onChange={(e) => setIban(e.target.value)}
-                  placeholder="예: DE72 2022 0800 0052 0192 95"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bic">BIC/SWIFT</Label>
-                <Input
-                  id="bic"
-                  value={bic}
-                  onChange={(e) => setBic(e.target.value)}
-                  placeholder="예: SXPYDEHHXXX"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <p className={labelClass}>BIC / SWIFT</p>
+              <Input value={bic} onChange={(e) => setBic(e.target.value)} placeholder="SXPYDEHHXXX" className={inputClass} />
             </div>
           </div>
         </div>
 
-        {message && (
-          <div
-            className={`p-3 rounded-md ${
-              message.type === 'success'
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
-          >
-            <p className="text-sm">{message.text}</p>
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
+            <p className="text-xs text-red-700">{error}</p>
           </div>
         )}
 
-        <Button onClick={handleSave} disabled={saving} className="w-full">
-          {saving ? '저장 중...' : '저장'}
-        </Button>
-      </CardContent>
-    </Card>
+        <div className="pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50"
+          >
+            {saved ? (
+              <><Check className="w-4 h-4" /> 저장됨</>
+            ) : saving ? '저장 중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -42,6 +42,7 @@ export async function PATCH(request: NextRequest) {
 
     const {
       companyName,
+      email,
       taxNumber,
       vatId,
       address,
@@ -60,6 +61,7 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: {
       companyName?: string | null
+      email?: string | null
       taxNumber?: string | null
       vatId?: string | null
       address?: string | null
@@ -74,6 +76,7 @@ export async function PATCH(request: NextRequest) {
     } = {}
 
     if (companyName !== undefined) updateData.companyName = companyName || null
+    if (email !== undefined) updateData.email = email || null
     if (taxNumber !== undefined) updateData.taxNumber = taxNumber || null
     if (vatId !== undefined) updateData.vatId = vatId || null
     if (address !== undefined) updateData.address = address || null

@@ -112,6 +112,7 @@ model BankConnection {
 model Settings {
   id              String    @id @default(cuid())
   companyName     String?   // 회사명
+  email           String?   // 회사 이메일
   taxNumber       String?   // 세금번호
   vatId           String?   // VAT ID
   address         String?   // 주소
@@ -166,6 +167,7 @@ model Customer {
   country         String    @default("DE")
   vatId           String?   // EU B2B용
   taxExempt       Boolean   @default(false)
+  notes           String?   // 내부 메모
 
   quotes          Quote[]
   invoices        Invoice[]

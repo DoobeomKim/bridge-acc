@@ -55,6 +55,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     // 견적서 항목을 인보이스 항목으로 복사
     const invoiceItems = quote.items.map((item) => ({
       description: item.description,
+      additionalInfo: item.additionalInfo || null,
       quantity: item.quantity,
       unit: item.unit,
       unitPrice: item.unitPrice,

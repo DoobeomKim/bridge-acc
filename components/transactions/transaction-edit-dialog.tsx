@@ -4,13 +4,9 @@ import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -20,7 +16,14 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { TRANSACTION_CATEGORIES, CATEGORY_LABELS, VAT_RATES } from '@/types'
-import { formatCurrency } from '@/lib/utils-accounting'
+import { formatCurrency, formatDate } from '@/lib/utils-accounting'
+import {
+  Paperclip, Upload, Eye, Download, Trash2,
+  FileText, ImageIcon, AlertCircle,
+} from 'lucide-react'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Attachment = any
 
 interface Transaction {
   id: string
@@ -41,34 +44,47 @@ interface TransactionEditDialogProps {
   onSaved?: () => void
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+function isViewable(mimeType: string) {
+  return ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+    .some(t => mimeType.toLowerCase().includes(t))
+}
+
+function FileIcon({ mimeType }: { mimeType: string }) {
+  if (mimeType.startsWith('image/')) return <ImageIcon className="w-4 h-4 text-zinc-400" />
+  return <FileText className="w-4 h-4 text-zinc-400" />
+}
+
 export function TransactionEditDialog({
   transaction,
   open,
   onOpenChange,
   onSaved,
 }: TransactionEditDialogProps) {
-  const [description, setDescription] = useState<string>(transaction.description || '')
-  const [category, setCategory] = useState<string>(transaction.category || 'none')
-  const [vatRate, setVatRate] = useState<string>(
+  const [description, setDescription] = useState(transaction.description || '')
+  const [category, setCategory] = useState(transaction.category || 'none')
+  const [vatRate, setVatRate] = useState(
     transaction.vatRate !== null ? transaction.vatRate.toString() : 'none'
   )
-  const [notes, setNotes] = useState<string>(transaction.notes || '')
+  const [notes, setNotes] = useState(transaction.notes || '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [attachments, setAttachments] = useState<any[]>([])
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loadingAttachments, setLoadingAttachments] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
 
-  // Load attachments
   const loadAttachments = async () => {
     setLoadingAttachments(true)
     try {
       const response = await fetch(`/api/transactions/${transaction.id}/attachments`)
       const data = await response.json()
-      if (data.success) {
-        setAttachments(data.data)
-      }
+      if (data.success) setAttachments(data.data)
     } catch (error) {
       console.error('Error loading attachments:', error)
     } finally {
@@ -76,7 +92,6 @@ export function TransactionEditDialog({
     }
   }
 
-  // Reset form when transaction changes
   useEffect(() => {
     setDescription(transaction.description || '')
     setCategory(transaction.category || 'none')
@@ -90,27 +105,18 @@ export function TransactionEditDialog({
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
-
     setUploadingFiles(true)
     try {
       const formData = new FormData()
-      Array.from(files).forEach((file) => {
-        formData.append('files', file)
-      })
-
+      Array.from(files).forEach((file) => formData.append('files', file))
       const response = await fetch(`/api/transactions/${transaction.id}/attachments`, {
         method: 'POST',
         body: formData,
       })
-
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload files')
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Failed to upload files')
       await loadAttachments()
-      event.target.value = '' // Reset input
+      event.target.value = ''
     } catch (err) {
       alert(err instanceof Error ? err.message : 'File upload failed')
     } finally {
@@ -120,25 +126,16 @@ export function TransactionEditDialog({
 
   const handleFileDrop = async (files: FileList) => {
     if (!files || files.length === 0) return
-
     setUploadingFiles(true)
     try {
       const formData = new FormData()
-      Array.from(files).forEach((file) => {
-        formData.append('files', file)
-      })
-
+      Array.from(files).forEach((file) => formData.append('files', file))
       const response = await fetch(`/api/transactions/${transaction.id}/attachments`, {
         method: 'POST',
         body: formData,
       })
-
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload files')
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Failed to upload files')
       await loadAttachments()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'File upload failed')
@@ -147,96 +144,28 @@ export function TransactionEditDialog({
     }
   }
 
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-
-    const files = e.dataTransfer.files
-    if (files && files.length > 0) {
-      handleFileDrop(files)
-    }
-  }
-
   const handleDeleteAttachment = async (attachmentId: string) => {
     if (!confirm('이 파일을 삭제하시겠습니까?')) return
-
     try {
       const response = await fetch(
         `/api/transactions/${transaction.id}/attachments/${attachmentId}`,
         { method: 'DELETE' }
       )
-
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete file')
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Failed to delete file')
       await loadAttachments()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'File deletion failed')
     }
   }
 
-  const handleViewAttachment = (attachmentId: string, mimeType: string) => {
-    // PDF와 이미지는 브라우저에서 직접 열기
-    const viewableTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif']
-
-    if (viewableTypes.some(type => mimeType.toLowerCase().includes(type))) {
-      const url = `/api/transactions/${transaction.id}/attachments/${attachmentId}/view`
-      window.open(url, '_blank')
-    } else {
-      alert('이 파일 형식은 브라우저에서 미리보기를 지원하지 않습니다. 다운로드하여 확인해주세요.')
-    }
-  }
-
-  const handleDownloadAttachment = (attachmentId: string, fileName: string) => {
-    const url = `/api/transactions/${transaction.id}/attachments/${attachmentId}`
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    link.click()
-  }
-
-  const isViewable = (mimeType: string) => {
-    const viewableTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif']
-    return viewableTypes.some(type => mimeType.toLowerCase().includes(type))
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
   const handleSave = async () => {
     setSaving(true)
     setError(null)
-
     try {
       const response = await fetch(`/api/transactions/${transaction.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           description: description.trim() || '',
           category: category === 'none' ? null : category,
@@ -244,16 +173,9 @@ export function TransactionEditDialog({
           notes: notes || null,
         }),
       })
-
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save')
-      }
-
-      if (onSaved) {
-        onSaved()
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to save')
+      onSaved?.()
       onOpenChange(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -262,268 +184,263 @@ export function TransactionEditDialog({
     }
   }
 
-  // 카테고리를 수입/지출로 그룹화
   const incomeCategories = Object.entries(TRANSACTION_CATEGORIES)
-    .filter(([, value]) => value.startsWith('revenue_'))
-    .map(([key, value]) => ({ key, value, label: CATEGORY_LABELS[value] }))
+    .filter(([, v]) => v.startsWith('revenue_'))
+    .map(([, v]) => ({ value: v, label: CATEGORY_LABELS[v] }))
 
   const expenseCategories = Object.entries(TRANSACTION_CATEGORIES)
-    .filter(([, value]) => value.startsWith('expense_'))
-    .map(([key, value]) => ({ key, value, label: CATEGORY_LABELS[value] }))
+    .filter(([, v]) => v.startsWith('expense_'))
+    .map(([, v]) => ({ value: v, label: CATEGORY_LABELS[v] }))
 
   const taxCategories = Object.entries(TRANSACTION_CATEGORIES)
-    .filter(([, value]) => value.startsWith('tax_'))
-    .map(([key, value]) => ({ key, value, label: CATEGORY_LABELS[value] }))
+    .filter(([, v]) => v.startsWith('tax_'))
+    .map(([, v]) => ({ value: v, label: CATEGORY_LABELS[v] }))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>거래내역 편집 (Transaktion bearbeiten)</DialogTitle>
-          <DialogDescription>
-            카테고리와 VAT 정보를 설정하세요
-          </DialogDescription>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+
+        {/* Header */}
+        <DialogHeader className="px-6 py-5 border-b border-zinc-100">
+          <DialogTitle className="text-sm font-semibold text-zinc-900">거래내역 편집</DialogTitle>
+          <div className="flex items-center justify-between mt-3 p-3 bg-zinc-50 rounded-lg">
+            <div>
+              <p className="text-xs text-zinc-500">{formatDate(transaction.date)}</p>
+              <p className="text-xs font-medium text-zinc-700 mt-0.5 truncate max-w-[280px]">
+                {transaction.description}
+              </p>
+              {transaction.counterparty && (
+                <p className="text-[11px] text-zinc-400 mt-0.5">{transaction.counterparty}</p>
+              )}
+            </div>
+            <span className={`text-sm font-semibold tabular-nums flex-shrink-0 ml-4 ${
+              transaction.amount > 0 ? 'text-emerald-600' : 'text-zinc-700'
+            }`}>
+              {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
+            </span>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Transaction details */}
-          <div className="bg-gray-50 p-4 rounded-md space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">금액:</span>
-              <span
-                className={`text-sm font-bold ${
-                  transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                }`}
-              >
-                {formatCurrency(transaction.amount, transaction.currency)}
-              </span>
-            </div>
-            {transaction.counterparty && (
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">상대방:</span>
-                <span className="text-sm">{transaction.counterparty}</span>
-              </div>
-            )}
-          </div>
+        <div className="px-6 py-5 space-y-5">
 
-          {/* Description input */}
-          <div className="space-y-2">
-            <Label htmlFor="description">설명 (Beschreibung)</Label>
+          {/* Description */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">
+              설명
+            </label>
             <Textarea
-              id="description"
-              placeholder="거래 설명을 입력하세요..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
+              className="text-xs border-zinc-200 resize-none focus-visible:ring-zinc-900"
+              placeholder="거래 설명..."
             />
           </div>
 
-          {/* Category selection */}
-          <div className="space-y-2">
-            <Label htmlFor="category">카테고리 (Kategorie)</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="카테고리 선택..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">미분류</SelectItem>
+          {/* Category + VAT row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">
+                카테고리
+              </label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="h-8 text-xs border-zinc-200 focus:ring-zinc-900">
+                  <SelectValue placeholder="미분류" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">미분류</SelectItem>
+                  {incomeCategories.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-400">수입</div>
+                      {incomeCategories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {expenseCategories.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-400">지출</div>
+                      {expenseCategories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {taxCategories.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-400">세금</div>
+                      {taxCategories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                      ))}
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
 
-                {incomeCategories.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                      수입 (Einnahmen)
-                    </div>
-                    {incomeCategories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-
-                {expenseCategories.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                      지출 (Ausgaben)
-                    </div>
-                    {expenseCategories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-
-                {taxCategories.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                      세금 (Steuern)
-                    </div>
-                    {taxCategories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* VAT rate selection */}
-          <div className="space-y-2">
-            <Label htmlFor="vatRate">VAT 세율 (MwSt-Satz)</Label>
-            <Select value={vatRate} onValueChange={setVatRate}>
-              <SelectTrigger id="vatRate">
-                <SelectValue placeholder="VAT 세율 선택..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">해당 없음</SelectItem>
-                {VAT_RATES.map((rate) => (
-                  <SelectItem key={rate} value={rate.toString()}>
-                    {rate}%
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {vatRate && vatRate !== 'none' && (
-              <p className="text-xs text-muted-foreground">
-                VAT 금액은 자동으로 계산됩니다
-              </p>
-            )}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">
+                VAT (MwSt)
+              </label>
+              <Select value={vatRate} onValueChange={setVatRate}>
+                <SelectTrigger className="h-8 text-xs border-zinc-200 focus:ring-zinc-900">
+                  <SelectValue placeholder="해당 없음" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">해당 없음</SelectItem>
+                  {VAT_RATES.map((rate) => (
+                    <SelectItem key={rate} value={rate.toString()}>{rate}%</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">메모 (Notizen)</Label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">
+              메모
+            </label>
             <Textarea
-              id="notes"
-              placeholder="추가 정보나 메모를 입력하세요..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={3}
+              rows={2}
+              className="text-xs border-zinc-200 resize-none focus-visible:ring-zinc-900"
+              placeholder="추가 메모..."
             />
           </div>
 
           {/* Attachments */}
           <div className="space-y-2">
-            <Label>증빙자료 (Belege)</Label>
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">
+              증빙자료 · {attachments.length}개
+            </label>
+
+            {/* Drop zone */}
             <div
-              className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
-                isDragging
-                  ? 'border-gray-600 bg-gray-50'
-                  : 'border-gray-300 bg-white'
+              className={`border-2 border-dashed rounded-lg transition-colors ${
+                isDragging ? 'border-zinc-400 bg-zinc-50' : 'border-zinc-200 hover:border-zinc-300'
               }`}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
+              onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDragging(false)
+                const files = e.dataTransfer.files
+                if (files?.length) handleFileDrop(files)
+              }}
             >
-              <input
-                type="file"
-                id="file-upload"
-                multiple
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                onChange={handleFileUpload}
-                className="hidden"
-                disabled={uploadingFiles}
-              />
-              <label
-                htmlFor="file-upload"
-                className="flex flex-col items-center cursor-pointer"
-              >
-                <div className="text-3xl mb-2">📎</div>
-                <p className="text-sm font-medium text-center">
-                  {uploadingFiles ? '업로드 중...' : '파일을 클릭하거나 드래그하여 업로드'}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  PDF, 이미지, Excel, Word (최대 10MB)
-                </p>
+              <label htmlFor="attachment-upload" className="flex items-center justify-center gap-2 py-3 cursor-pointer">
+                <input
+                  id="attachment-upload"
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                  onChange={handleFileUpload}
+                  disabled={uploadingFiles}
+                  className="hidden"
+                />
+                {uploadingFiles ? (
+                  <div className="flex items-center gap-2">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
+                        style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                    <span className="text-xs text-zinc-400">업로드 중...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-3.5 h-3.5 text-zinc-400" />
+                    <span className="text-xs text-zinc-500">클릭 또는 드래그 · PDF, 이미지, Excel, Word</span>
+                  </>
+                )}
               </label>
             </div>
 
-            {/* Attachments list */}
+            {/* Attachment list */}
             {loadingAttachments ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <div className="space-y-2">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-10 bg-zinc-100 rounded-lg animate-pulse" />
+                ))}
               </div>
             ) : attachments.length > 0 ? (
-              <div className="space-y-2">
-                {attachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="text-2xl">
-                        {attachment.mimeType.startsWith('image/') ? '🖼️' :
-                         attachment.mimeType === 'application/pdf' ? '📄' : '📎'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium break-words">
-                          {attachment.fileName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatFileSize(attachment.fileSize)}
-                        </p>
-                      </div>
+              <div className="space-y-1.5">
+                {attachments.map((att) => (
+                  <div key={att.id} className="flex items-center gap-3 px-3 py-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+                    <FileIcon mimeType={att.mimeType} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-zinc-700 truncate">{att.fileName}</p>
+                      <p className="text-[11px] text-zinc-400">{formatFileSize(att.fileSize)}</p>
                     </div>
-                    <div className="flex gap-2">
-                      {isViewable(attachment.mimeType) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewAttachment(attachment.id, attachment.mimeType)}
-                          className="text-blue-600 hover:text-blue-700"
+                    <div className="flex items-center gap-1">
+                      {isViewable(att.mimeType) && (
+                        <button
+                          onClick={() => window.open(`/api/transactions/${transaction.id}/attachments/${att.id}/view`, '_blank')}
+                          className="p-1.5 rounded text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200 transition-colors"
+                          title="보기"
                         >
-                          보기
-                        </Button>
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownloadAttachment(attachment.id, attachment.fileName)}
+                      <button
+                        onClick={() => {
+                          const link = document.createElement('a')
+                          link.href = `/api/transactions/${transaction.id}/attachments/${att.id}`
+                          link.download = att.fileName
+                          link.click()
+                        }}
+                        className="p-1.5 rounded text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200 transition-colors"
+                        title="다운로드"
                       >
-                        다운로드
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteAttachment(attachment.id)}
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAttachment(att.id)}
+                        className="p-1.5 rounded text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="삭제"
                       >
-                        삭제
-                      </Button>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                첨부된 파일이 없습니다
-              </p>
+              <div className="flex items-center gap-2 py-3 px-3">
+                <Paperclip className="w-3.5 h-3.5 text-zinc-300" />
+                <p className="text-xs text-zinc-400">첨부된 파일이 없습니다</p>
+              </div>
             )}
           </div>
 
+          {/* Error */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-lg">
+              <AlertCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-red-600">{error}</p>
             </div>
           )}
         </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-end gap-2">
+          <button
             onClick={() => onOpenChange(false)}
             disabled={saving}
+            className="px-4 py-2 border border-zinc-200 text-zinc-600 text-xs font-medium rounded-lg hover:border-zinc-900 hover:text-zinc-900 transition-all disabled:opacity-50"
           >
             취소
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 bg-zinc-900 text-white text-xs font-medium rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50"
+          >
             {saving ? '저장 중...' : '저장'}
-          </Button>
-        </DialogFooter>
+          </button>
+        </div>
+
       </DialogContent>
     </Dialog>
   )

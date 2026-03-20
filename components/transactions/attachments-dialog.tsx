@@ -1,14 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { X, FileText, ImageIcon, Download, Eye, Paperclip } from 'lucide-react'
 
 interface Attachment {
   id: string
@@ -23,6 +16,22 @@ interface AttachmentsDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+function isViewable(mimeType: string) {
+  return ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+    .some(t => mimeType.toLowerCase().includes(t))
+}
+
+function FileIcon({ mimeType }: { mimeType: string }) {
+  if (mimeType.startsWith('image/')) return <ImageIcon className="w-4 h-4 text-zinc-400" />
+  return <FileText className="w-4 h-4 text-zinc-400" />
+}
+
 export function AttachmentsDialog({
   transactionId,
   open,
@@ -32,9 +41,8 @@ export function AttachmentsDialog({
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (open) {
-      loadAttachments()
-    }
+    if (open) loadAttachments()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, transactionId])
 
   const loadAttachments = async () => {
@@ -42,9 +50,7 @@ export function AttachmentsDialog({
     try {
       const response = await fetch(`/api/transactions/${transactionId}/attachments`)
       const data = await response.json()
-      if (data.success) {
-        setAttachments(data.data)
-      }
+      if (data.success) setAttachments(data.data)
     } catch (error) {
       console.error('Error loading attachments:', error)
     } finally {
@@ -52,112 +58,76 @@ export function AttachmentsDialog({
     }
   }
 
-  const handleDownloadAttachment = (attachmentId: string, fileName: string) => {
-    const url = `/api/transactions/${transactionId}/attachments/${attachmentId}`
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  const handleViewAttachment = (attachmentId: string, mimeType: string) => {
-    const viewableTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif']
-
-    if (viewableTypes.some(type => mimeType.toLowerCase().includes(type))) {
-      const url = `/api/transactions/${transactionId}/attachments/${attachmentId}/view`
-      window.open(url, '_blank')
-    } else {
-      alert('이 파일 형식은 브라우저에서 미리보기를 지원하지 않습니다. 다운로드하여 확인해주세요.')
-    }
-  }
-
-  const isViewable = (mimeType: string) => {
-    const viewableTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif']
-    return viewableTypes.some(type => mimeType.toLowerCase().includes(type))
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return '🖼️'
-    if (mimeType === 'application/pdf') return '📄'
-    return '📎'
-  }
+  if (!open) return null
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>첨부파일 (Anhänge)</DialogTitle>
-          <DialogDescription>
-            거래 관련 증빙자료 및 첨부파일
-          </DialogDescription>
-        </DialogHeader>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl border border-zinc-200 max-w-md w-full shadow-xl">
 
-        <div className="py-4">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-900">첨부파일 (Anhänge)</h2>
+            <p className="text-xs text-zinc-400 mt-0.5">거래 관련 증빙자료 및 첨부파일</p>
+          </div>
+          <button onClick={() => onOpenChange(false)} className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5">
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-sm text-muted-foreground">로딩 중...</p>
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 bg-zinc-100 rounded-lg animate-pulse" />
+              ))}
             </div>
           ) : attachments.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {attachments.map((attachment) => (
                 <div
                   key={attachment.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 bg-zinc-50 rounded-lg border border-zinc-100"
                 >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="text-2xl">
-                      {getFileIcon(attachment.mimeType)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium break-words">
-                        {attachment.fileName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(attachment.fileSize)}
-                      </p>
-                    </div>
+                  <FileIcon mimeType={attachment.mimeType} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-zinc-700 truncate">{attachment.fileName}</p>
+                    <p className="text-[11px] text-zinc-400">{formatFileSize(attachment.fileSize)}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-1">
                     {isViewable(attachment.mimeType) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewAttachment(attachment.id, attachment.mimeType)}
-                        className="text-blue-600 hover:text-blue-700"
+                      <button
+                        onClick={() => window.open(`/api/transactions/${transactionId}/attachments/${attachment.id}/view`, '_blank')}
+                        className="p-1.5 rounded text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200 transition-colors"
+                        title="보기"
                       >
-                        보기
-                      </Button>
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDownloadAttachment(attachment.id, attachment.fileName)}
-                      className="text-green-600 hover:text-green-700"
+                    <button
+                      onClick={() => {
+                        const link = document.createElement('a')
+                        link.href = `/api/transactions/${transactionId}/attachments/${attachment.id}`
+                        link.download = attachment.fileName
+                        link.click()
+                      }}
+                      className="p-1.5 rounded text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200 transition-colors"
+                      title="다운로드"
                     >
-                      다운로드
-                    </Button>
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground">
-                첨부된 파일이 없습니다
-              </p>
+            <div className="flex items-center justify-center gap-2 py-10">
+              <Paperclip className="w-4 h-4 text-zinc-300" />
+              <p className="text-xs text-zinc-400">첨부된 파일이 없습니다</p>
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 }

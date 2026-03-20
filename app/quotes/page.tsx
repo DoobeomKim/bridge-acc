@@ -1,283 +1,253 @@
-'use client';
+'use client'
 
-/**
- * 견적서 목록 페이지
- */
-
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { FileText, Plus, Trash2, ArrowRight } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils-accounting'
 
 interface Quote {
-  id: string;
-  quoteNumber: string;
-  status: string;
+  id: string
+  quoteNumber: string
+  status: string
   customer: {
-    name: string;
-    company?: string;
-  };
-  subtotal: number;
-  totalVat: number;
-  totalGross: number;
-  validUntil: string;
-  createdAt: string;
+    name: string
+    company?: string
+  }
+  subtotal: number
+  totalVat: number
+  totalGross: number
+  validUntil: string
+  createdAt: string
 }
 
-const statusLabels: Record<string, string> = {
-  draft: 'Entwurf',
-  sent: 'Gesendet',
-  accepted: 'Angenommen',
-  rejected: 'Abgelehnt',
-  expired: 'Abgelaufen',
-};
+const STATUS_LABELS: Record<string, string> = {
+  draft: '초안',
+  sent: '발송됨',
+  accepted: '수락됨',
+  rejected: '거절됨',
+  expired: '만료됨',
+}
 
-const statusColors: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700',
-  sent: 'bg-blue-100 text-blue-700',
-  accepted: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700',
-  expired: 'bg-orange-100 text-orange-700',
-};
+const STATUS_STYLES: Record<string, string> = {
+  draft:    'bg-zinc-100 text-zinc-500 border-zinc-200',
+  sent:     'bg-amber-50 text-amber-700 border-amber-200',
+  accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  rejected: 'bg-red-50 text-red-600 border-red-200',
+  expired:  'bg-zinc-100 text-zinc-400 border-zinc-200',
+}
+
+const FILTERS = ['all', 'draft', 'sent', 'accepted'] as const
+const FILTER_LABELS: Record<string, string> = {
+  all: '전체', draft: '초안', sent: '발송됨', accepted: '수락됨',
+}
+
+function SkeletonRow() {
+  return (
+    <tr>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <td key={i} className="px-5 py-3">
+          <div className="h-3 bg-zinc-100 rounded animate-pulse" style={{ width: `${50 + (i % 3) * 20}%` }} />
+        </td>
+      ))}
+    </tr>
+  )
+}
 
 export default function QuotesPage() {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>('all');
+  const [quotes, setQuotes] = useState<Quote[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [filter, setFilter] = useState<string>('all')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchQuotes();
-  }, []);
+    fetchQuotes()
+  }, [])
 
   const fetchQuotes = async () => {
     try {
-      setLoading(true);
-      const res = await fetch('/api/quotes');
-
-      if (!res.ok) {
-        throw new Error('Failed to fetch quotes');
-      }
-
-      const data = await res.json();
-      setQuotes(data);
+      setLoading(true)
+      const res = await fetch('/api/quotes')
+      if (!res.ok) throw new Error('Failed to fetch quotes')
+      const data = await res.json()
+      setQuotes(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleDelete = async (id: string, quoteNumber: string) => {
-    if (!confirm(`정말 견적서 "${quoteNumber}"를 삭제하시겠습니까?`)) {
-      return;
-    }
+    if (!confirm(`정말 견적서 "${quoteNumber}"를 삭제하시겠습니까?`)) return
 
+    setDeletingId(id)
     try {
-      const res = await fetch(`/api/quotes/${id}`, {
-        method: 'DELETE',
-      });
-
+      const res = await fetch(`/api/quotes/${id}`, { method: 'DELETE' })
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to delete quote');
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to delete quote')
       }
-
-      fetchQuotes();
+      fetchQuotes()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete quote');
+      alert(err instanceof Error ? err.message : 'Failed to delete quote')
+    } finally {
+      setDeletingId(null)
     }
-  };
-
-  const filteredQuotes = filter === 'all'
-    ? quotes
-    : quotes.filter((q) => q.status === filter);
-
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="max-w-6xl mx-auto">
-          <p>로딩 중...</p>
-        </div>
-      </div>
-    );
   }
 
-  if (error) {
-    return (
-      <div className="p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const filteredQuotes = filter === 'all' ? quotes : quotes.filter((q) => q.status === filter)
 
   return (
-    <div className="p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* 헤더 */}
-        <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-zinc-50">
+      <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Angebote</h1>
-            <p className="text-gray-600 mt-1">견적서 관리</p>
+            <h1 className="text-xl font-semibold text-zinc-900 tracking-tight">견적서</h1>
+            <p className="text-sm text-zinc-500 mt-0.5">견적서 관리</p>
           </div>
           <Link
             href="/quotes/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-700 transition-colors"
           >
-            + Neues Angebot
+            <Plus className="w-4 h-4" /> 새 견적서
           </Link>
         </div>
 
-        {/* 필터 */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded ${
-              filter === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Alle ({quotes.length})
-          </button>
-          <button
-            onClick={() => setFilter('draft')}
-            className={`px-4 py-2 rounded ${
-              filter === 'draft'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Entwurf ({quotes.filter((q) => q.status === 'draft').length})
-          </button>
-          <button
-            onClick={() => setFilter('sent')}
-            className={`px-4 py-2 rounded ${
-              filter === 'sent'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Gesendet ({quotes.filter((q) => q.status === 'sent').length})
-          </button>
-          <button
-            onClick={() => setFilter('accepted')}
-            className={`px-4 py-2 rounded ${
-              filter === 'accepted'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Angenommen ({quotes.filter((q) => q.status === 'accepted').length})
-          </button>
-        </div>
-
-        {/* 견적서 목록 */}
-        {filteredQuotes.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded p-8 text-center">
-            <p className="text-gray-600">
-              {filter === 'all'
-                ? '아직 등록된 견적서가 없습니다.'
-                : `"${statusLabels[filter]}" 상태의 견적서가 없습니다.`}
-            </p>
-            {filter === 'all' && (
-              <Link
-                href="/quotes/new"
-                className="inline-block mt-4 text-blue-600 hover:underline"
-              >
-                첫 번째 견적서 작성하기
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Angebotsnummer
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Kunde
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">
-                    Betrag (Brutto)
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Gültig bis
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">
-                    Aktionen
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredQuotes.map((quote) => (
-                  <tr key={quote.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-blue-600">
-                      <Link href={`/quotes/${quote.id}`} className="hover:underline">
-                        {quote.quoteNumber}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="font-medium">{quote.customer.name}</div>
-                      {quote.customer.company && (
-                        <div className="text-xs text-gray-500">{quote.customer.company}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <span
-                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                          statusColors[quote.status]
-                        }`}
-                      >
-                        {statusLabels[quote.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right font-medium">
-                      {quote.totalGross.toLocaleString('de-DE', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{' '}
-                      €
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {new Date(quote.validUntil).toLocaleDateString('de-DE')}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right space-x-2">
-                      <Link
-                        href={`/quotes/${quote.id}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        보기
-                      </Link>
-                      {quote.status === 'draft' && (
-                        <button
-                          onClick={() => handleDelete(quote.id, quote.quoteNumber)}
-                          className="text-red-600 hover:underline"
-                        >
-                          삭제
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-100 rounded-xl px-5 py-3">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
-        {/* 통계 */}
-        <div className="mt-6 text-sm text-gray-600">
-          총 {filteredQuotes.length}개의 견적서
-          {filter !== 'all' && ` (전체: ${quotes.length}개)`}
+        {/* Table */}
+        <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-100">
+            <p className="text-xs text-zinc-500">
+              {loading ? '불러오는 중...' : (
+                <><span className="font-medium text-zinc-900">{filteredQuotes.length}</span>건</>
+              )}
+            </p>
+            <div className="flex items-center gap-1">
+              {FILTERS.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${
+                    filter === f
+                      ? 'bg-zinc-900 text-white'
+                      : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+                  }`}
+                >
+                  {FILTER_LABELS[f]}
+                  {f !== 'all' && (
+                    <span className="ml-1 tabular-nums">
+                      ({quotes.filter((q) => q.status === f).length})
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-zinc-100">
+                <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-400">번호</th>
+                <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-400">고객</th>
+                <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-400">상태</th>
+                <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-zinc-400">금액 (총액)</th>
+                <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-400">유효기간</th>
+                <th className="px-5 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-50">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+              ) : filteredQuotes.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16">
+                    <div className="text-center">
+                      <FileText className="w-8 h-8 text-zinc-200 mx-auto mb-3" />
+                      <p className="text-sm text-zinc-400">
+                        {filter === 'all' ? '등록된 견적서가 없습니다' : `"${FILTER_LABELS[filter]}" 상태의 견적서가 없습니다`}
+                      </p>
+                      {filter === 'all' && (
+                        <Link
+                          href="/quotes/new"
+                          className="inline-flex items-center gap-1.5 mt-4 text-xs font-medium bg-zinc-900 text-white px-3 py-1.5 rounded-lg hover:bg-zinc-700 transition-colors"
+                        >
+                          <Plus className="w-3 h-3" /> 새 견적서
+                        </Link>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredQuotes.map((quote) => (
+                  <tr key={quote.id} className="hover:bg-zinc-50/70 transition-colors">
+                    <td className="px-5 py-3">
+                      <Link
+                        href={`/quotes/${quote.id}`}
+                        className="text-xs font-mono text-zinc-700 hover:text-zinc-900 transition-colors"
+                      >
+                        {quote.quoteNumber}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3">
+                      <p className="text-xs font-medium text-zinc-800">{quote.customer.name}</p>
+                      {quote.customer.company && (
+                        <p className="text-[11px] text-zinc-400 mt-0.5">{quote.customer.company}</p>
+                      )}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${STATUS_STYLES[quote.status] || STATUS_STYLES.draft}`}>
+                        {STATUS_LABELS[quote.status] || quote.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <span className="text-xs font-semibold tabular-nums text-zinc-800">
+                        {formatCurrency(quote.totalGross, 'EUR')}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs text-zinc-500 tabular-nums">
+                        {new Date(quote.validUntil).toLocaleDateString('de-DE')}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-1 justify-end">
+                        <Link
+                          href={`/quotes/${quote.id}`}
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                          title="보기"
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                        {quote.status === 'draft' && (
+                          <button
+                            onClick={() => handleDelete(quote.id, quote.quoteNumber)}
+                            disabled={deletingId === quote.id}
+                            className="p-1.5 rounded-md text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
+                            title="삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
+
       </div>
     </div>
-  );
+  )
 }

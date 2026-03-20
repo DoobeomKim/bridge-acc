@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   page: {
     paddingTop: 30,
     paddingBottom: 80, // 푸터 공간 확보
-    paddingHorizontal: 40,
+    paddingHorizontal: 28,
     fontSize: 10,
     fontFamily: 'Noto Sans KR',
     fontWeight: 500, // Medium 웨이트 사용
@@ -88,16 +88,15 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   infoBlock: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: 'column',
   },
   infoLabel: {
-    fontSize: 8,
-    color: '#666',
-    marginRight: 4,
+    fontSize: 7,
+    color: '#888',
+    marginBottom: 2,
   },
   infoValue: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 500,
   },
   table: {
@@ -170,8 +169,8 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute',
     bottom: 30,
-    left: 40,
-    right: 40,
+    left: 28,
+    right: 28,
     fontSize: 7,
     color: '#666',
     borderTopWidth: 0.5,
@@ -227,6 +226,7 @@ interface InvoicePDFProps {
   };
   settings: {
     companyName?: string;
+    email?: string;
     address?: string;
     taxNumber?: string;
     vatId?: string;
@@ -394,11 +394,13 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings }) => 
         {/* 푸터 */}
         <View style={styles.footer}>
           {/* 법적 정보 */}
-          {(settings.hrb || settings.managingDirector) && (
+          {(settings.hrb || settings.managingDirector || settings.email) && (
             <Text style={styles.footerRow}>
               {settings.hrb && `HRB ${settings.hrb}`}
               {settings.hrb && settings.managingDirector && ' | '}
               {settings.managingDirector && `Geschäftsführer: ${settings.managingDirector}`}
+              {(settings.hrb || settings.managingDirector) && settings.email && ' | '}
+              {settings.email && `E-Mail: ${settings.email}`}
             </Text>
           )}
           {(settings.bankName || settings.iban || settings.bic) && (

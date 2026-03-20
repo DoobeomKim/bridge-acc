@@ -71,6 +71,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       country,
       vatId,
       taxExempt,
+      notes,
     } = body;
 
     // 고객 존재 확인
@@ -101,6 +102,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         ...(country !== undefined && { country }),
         ...(vatId !== undefined && { vatId }),
         ...(taxExempt !== undefined && { taxExempt }),
+        ...(notes !== undefined && { notes }),
       },
     });
 

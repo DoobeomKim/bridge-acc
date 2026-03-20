@@ -1,11 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from '@/components/ui/button'
+import {
+  TrendingUp, TrendingDown, Wallet, Landmark,
+  ArrowRight, UserPlus, FileText, Upload, BarChart3,
+  ChevronLeft, ChevronRight, CalendarDays,
+} from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils-accounting'
 import { CATEGORY_LABELS } from '@/types'
+import { format, addMonths, subMonths, startOfMonth } from 'date-fns'
 
 interface DashboardData {
   summary: {
@@ -30,21 +34,37 @@ interface DashboardData {
   }[]
 }
 
+function SkeletonPulse({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return <div className={`animate-pulse rounded bg-zinc-100 ${className ?? ''}`} style={style} />
+}
+
+function KPICardSkeleton() {
+  return (
+    <div className="bg-white rounded-xl border border-zinc-200 p-5">
+      <SkeletonPulse className="h-2.5 w-20 mb-4" />
+      <SkeletonPulse className="h-7 w-32 mb-2" />
+      <SkeletonPulse className="h-2.5 w-14" />
+    </div>
+  )
+}
+
 export default function Home() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()))
 
   useEffect(() => {
     fetchDashboardData()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMonth])
 
-  const fetchDashboardData = async () => {
+  async function fetchDashboardData() {
+    setLoading(true)
     try {
-      const response = await fetch('/api/dashboard')
+      const monthParam = format(currentMonth, 'yyyy-MM')
+      const response = await fetch(`/api/dashboard?month=${monthParam}`)
       const result = await response.json()
-      if (result.success) {
-        setData(result.data)
-      }
+      if (result.success) setData(result.data)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -52,227 +72,236 @@ export default function Home() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="container mx-auto p-8">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-sm text-muted-foreground">로딩 중...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const isCurrentMonth = currentMonth >= startOfMonth(new Date())
 
-  if (!data) {
-    return (
-      <div className="container mx-auto p-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>데이터를 불러올 수 없습니다</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
+  const kpiCards = [
+    {
+      title: '수입',
+      subtitle: 'Einnahmen',
+      value: data?.summary.totalIncome ?? 0,
+      icon: TrendingUp,
+      accent: 'bg-emerald-500',
+      textColor: 'text-emerald-600',
+    },
+    {
+      title: '지출',
+      subtitle: 'Ausgaben',
+      value: data?.summary.totalExpense ?? 0,
+      icon: TrendingDown,
+      accent: 'bg-red-400',
+      textColor: 'text-red-500',
+    },
+    {
+      title: '순이익',
+      subtitle: 'Nettogewinn',
+      value: data?.summary.netIncome ?? 0,
+      icon: Wallet,
+      accent: (data?.summary.netIncome ?? 0) >= 0 ? 'bg-emerald-500' : 'bg-red-400',
+      textColor: (data?.summary.netIncome ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500',
+    },
+    {
+      title: 'VAT 납부 예정',
+      subtitle: 'Umsatzsteuer',
+      value: data?.summary.vatPayable ?? 0,
+      icon: Landmark,
+      accent: 'bg-amber-400',
+      textColor: 'text-amber-600',
+    },
+  ]
+
+  const maxCategoryAmount = data?.categoryBreakdown[0]?.amount || 1
+
+  const quickActions = [
+    { label: '고객 추가', href: '/customers/new', icon: UserPlus },
+    { label: '견적서 작성', href: '/quotes/new', icon: FileText },
+    { label: '거래내역 업로드', href: '/transactions', icon: Upload },
+    { label: '리포트 보기', href: '/reports', icon: BarChart3 },
+  ]
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">
-          독일 GmbH 회계 현황을 한눈에 확인하세요
-        </p>
-      </div>
+    <div className="min-h-screen bg-zinc-50">
+      <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">이번 달 수입</CardTitle>
-            <span className="text-2xl">💰</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(data.summary.totalIncome)}
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-zinc-900 tracking-tight">Dashboard</h1>
+            <p className="text-sm text-zinc-500 mt-0.5">독일 GmbH 회계 현황</p>
+          </div>
+
+          {/* Month selector */}
+          <div className="flex items-center bg-white border border-zinc-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+              className="p-2 hover:bg-zinc-50 transition-colors border-r border-zinc-200"
+            >
+              <ChevronLeft className="w-3.5 h-3.5 text-zinc-500" />
+            </button>
+            <div className="flex items-center gap-1.5 px-3 min-w-[116px] justify-center">
+              <CalendarDays className="w-3 h-3 text-zinc-400" />
+              <span className="text-xs font-medium text-zinc-700">
+                {format(currentMonth, 'yyyy년 M월')}
+              </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Einnahmen
-            </p>
-          </CardContent>
-        </Card>
+            <button
+              onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+              disabled={isCurrentMonth}
+              className="p-2 hover:bg-zinc-50 transition-colors border-l border-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+            </button>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">이번 달 지출</CardTitle>
-            <span className="text-2xl">💸</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(data.summary.totalExpense)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Ausgaben
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">순이익</CardTitle>
-            <span className="text-2xl">📊</span>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${data.summary.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(data.summary.netIncome)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Nettogewinn
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">VAT 납부 예정</CardTitle>
-            <span className="text-2xl">🏛️</span>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${data.summary.vatPayable >= 0 ? 'text-orange-600' : 'text-green-600'}`}>
-              {formatCurrency(data.summary.vatPayable)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              MwSt
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-8 md:grid-cols-2">
-        {/* Category Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle>카테고리별 지출 (Top 10)</CardTitle>
-            <CardDescription>
-              이번 달 카테고리별 금액
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {data.categoryBreakdown.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                데이터가 없습니다
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {data.categoryBreakdown.map((item) => (
-                  <div key={item.category} className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        {CATEGORY_LABELS[item.category] || item.category}
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => <KPICardSkeleton key={i} />)
+            : kpiCards.map((card) => (
+                <div key={card.title} className="bg-white rounded-xl border border-zinc-200 relative overflow-hidden">
+                  <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${card.accent}`} />
+                  <div className="p-5 pl-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">
+                        {card.title}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.count}개 거래
-                      </p>
+                      <card.icon className="w-3.5 h-3.5 text-zinc-300 mt-0.5" />
                     </div>
-                    <div className="text-sm font-bold">
-                      {formatCurrency(item.amount)}
+                    <p className={`text-2xl font-semibold tabular-nums ${card.textColor}`}>
+                      {formatCurrency(card.value)}
+                    </p>
+                    <p className="text-[11px] text-zinc-400 mt-1">{card.subtitle}</p>
+                  </div>
+                </div>
+              ))}
+        </div>
+
+        {/* Main grid */}
+        <div className="grid lg:grid-cols-2 gap-5">
+
+          {/* Category Breakdown */}
+          <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-100">
+              <h2 className="text-sm font-semibold text-zinc-900">카테고리별 지출</h2>
+              <p className="text-xs text-zinc-400 mt-0.5">이번 달 상위 10개</p>
+            </div>
+            <div className="p-5">
+              {loading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <SkeletonPulse className="h-2.5 w-28" />
+                      <SkeletonPulse className="h-1" style={{ width: `${75 - i * 12}%` }} />
                     </div>
+                  ))}
+                </div>
+              ) : !data || data.categoryBreakdown.length === 0 ? (
+                <p className="text-sm text-zinc-400 text-center py-8">데이터가 없습니다</p>
+              ) : (
+                <div className="space-y-3.5">
+                  {data.categoryBreakdown.map((item) => (
+                    <div key={item.category}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium text-zinc-700">
+                          {CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] || item.category}
+                        </span>
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-[10px] text-zinc-400">{item.count}건</span>
+                          <span className="text-xs font-semibold tabular-nums text-zinc-900">
+                            {formatCurrency(item.amount)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-1 bg-zinc-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-zinc-800 rounded-full"
+                          style={{ width: `${(item.amount / maxCategoryAmount) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Recent Transactions */}
+          <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900">최근 거래내역</h2>
+                <p className="text-xs text-zinc-400 mt-0.5">최근 10건</p>
+              </div>
+              <Link
+                href="/transactions"
+                className="flex items-center gap-1 text-xs font-medium text-zinc-400 hover:text-zinc-900 transition-colors"
+              >
+                전체 보기 <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            {loading ? (
+              <div className="p-5 space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="space-y-1.5">
+                      <SkeletonPulse className="h-2.5 w-40" />
+                      <SkeletonPulse className="h-2 w-24" />
+                    </div>
+                    <SkeletonPulse className="h-2.5 w-20" />
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Transactions */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>최근 거래내역</CardTitle>
-                <CardDescription>
-                  최근 10개 거래
-                </CardDescription>
-              </div>
-              <Link href="/transactions">
-                <Button variant="outline" size="sm">
-                  전체 보기
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {data.recentTransactions.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground mb-4">
-                  거래내역이 없습니다
-                </p>
-                <Link href="/transactions">
-                  <Button>CSV 업로드하기</Button>
+            ) : !data || data.recentTransactions.length === 0 ? (
+              <div className="text-center py-10 px-5">
+                <p className="text-sm text-zinc-400 mb-4">거래내역이 없습니다</p>
+                <Link
+                  href="/transactions"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium bg-zinc-900 text-white px-3 py-1.5 rounded-lg hover:bg-zinc-700 transition-colors"
+                >
+                  <Upload className="w-3 h-3" /> CSV 업로드
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="divide-y divide-zinc-50">
                 {data.recentTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-start justify-between border-b pb-3 last:border-0">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium truncate max-w-xs">
-                        {tx.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(tx.date)}
-                        {tx.counterparty && ` • ${tx.counterparty}`}
+                  <div key={tx.id} className="flex items-center gap-3 px-5 py-3 hover:bg-zinc-50/70 transition-colors">
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${tx.amount > 0 ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-zinc-800 truncate">{tx.description}</p>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">
+                        {formatDate(tx.date)}{tx.counterparty && ` · ${tx.counterparty}`}
                       </p>
                     </div>
-                    <div className={`text-sm font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(tx.amount)}
-                    </div>
+                    <span className={`text-xs font-semibold tabular-nums flex-shrink-0 ${tx.amount > 0 ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                      {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
+                    </span>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>빠른 작업</CardTitle>
-          <CardDescription>
-            자주 사용하는 기능에 빠르게 접근하세요
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link href="/customers/new">
-              <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
-                <span className="text-2xl">👥</span>
-                <span className="text-sm">고객 추가</span>
-              </Button>
-            </Link>
-            <Link href="/quotes/new">
-              <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
-                <span className="text-2xl">📝</span>
-                <span className="text-sm">견적서 작성</span>
-              </Button>
-            </Link>
-            <Link href="/transactions">
-              <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
-                <span className="text-2xl">📤</span>
-                <span className="text-sm">CSV 업로드</span>
-              </Button>
-            </Link>
-            <Link href="/reports">
-              <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
-                <span className="text-2xl">📈</span>
-                <span className="text-sm">리포트 생성</span>
-              </Button>
-            </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white rounded-xl border border-zinc-200 p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 mb-4">빠른 작업</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {quickActions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="flex items-center gap-2.5 px-4 py-3 rounded-lg border border-zinc-200 hover:border-zinc-900 hover:bg-zinc-50 transition-all group"
+              >
+                <action.icon className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 transition-colors flex-shrink-0" />
+                <span className="text-sm font-medium text-zinc-600 group-hover:text-zinc-900 transition-colors">
+                  {action.label}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+      </div>
     </div>
   )
 }

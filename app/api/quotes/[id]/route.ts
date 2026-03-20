@@ -107,10 +107,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
         return {
           description: item.description,
+          additionalInfo: item.additionalInfo || null,
           quantity: item.quantity,
           unit: item.unit || 'Stück',
           unitPrice: item.unitPrice,
-          vatRate: item.vatRate || 19,
+          vatRate: item.vatRate ?? 19,
           subtotal,
           vatAmount,
           total,
