@@ -25,6 +25,33 @@ export type TransactionCategory = typeof TRANSACTION_CATEGORIES[keyof typeof TRA
 export const VAT_RATES = [0, 7, 19] as const
 export type VatRate = typeof VAT_RATES[number]
 
+export const POPUP_EXPENSE_CATEGORIES = {
+  FOOD: 'food',
+  TRANSPORT: 'transport',
+  BOOTH_EQUIPMENT: 'booth_equipment',
+  PRINT_MARKETING: 'print_marketing',
+  STAFF: 'staff',
+  ACCOMMODATION: 'accommodation',
+  OTHER: 'other',
+} as const
+
+export const POPUP_EXPENSE_CATEGORY_LABELS: Record<string, string> = {
+  food: '식음료',
+  transport: '운송/교통',
+  booth_equipment: '부스/장비',
+  print_marketing: '인쇄/홍보',
+  staff: '인건비',
+  accommodation: '숙박',
+  other: '기타',
+}
+
+export const POPUP_PAYMENT_METHOD_LABELS: Record<string, string> = {
+  card: '카드',
+  cash: '현금',
+  transfer: '계좌이체',
+  other: '기타',
+}
+
 // Category labels with German translations
 export const CATEGORY_LABELS: Record<string, string> = {
   revenue_sales: '판매 수입 (Umsatz)',

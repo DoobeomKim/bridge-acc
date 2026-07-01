@@ -63,3 +63,22 @@ export async function uploadTransactionAttachment(
     mimeType: file.type,
   };
 }
+
+/**
+ * 팝업 행사 비용 첨부파일 업로드 (PopupExpenseAttachment용)
+ */
+export async function uploadPopupExpenseAttachment(
+  file: File,
+  expenseId: string
+): Promise<{ url: string; pathname: string; fileName: string; fileSize: number; mimeType: string }> {
+  const folder = `popup-expenses/${expenseId}`;
+  const { url, pathname } = await uploadFile(file, file.name, folder);
+
+  return {
+    url,
+    pathname,
+    fileName: file.name,
+    fileSize: file.size,
+    mimeType: file.type,
+  };
+}

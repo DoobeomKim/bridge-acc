@@ -335,3 +335,63 @@ model InvoiceItem {
 
   @@index([invoiceId])
 }
+
+// PopupEvent - 단발성 팝업 행사 비용 관리
+model PopupEvent {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  startsAt        DateTime?
+  endsAt          DateTime?
+  currency        String    @default("EUR")
+  isDefault       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  expenses        PopupExpense[]
+
+  @@index([isDefault])
+  @@index([startsAt])
+}
+
+// PopupExpense - 팝업 행사에서 사용한 영수증/비용 내역
+model PopupExpense {
+  id              String    @id @default(cuid())
+  eventId         String
+  date            DateTime
+  vendor          String
+  itemName        String
+  category        String?
+  grossAmount     Float
+  currency        String    @default("EUR")
+  vatRate         Float?
+  vatAmount       Float?
+  paymentMethod   String?
+  status          String    @default("unchecked") // unchecked | checked
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  event           PopupEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  attachments     PopupExpenseAttachment[]
+
+  @@index([eventId])
+  @@index([date])
+  @@index([category])
+  @@index([status])
+}
+
+// PopupExpenseAttachment - 팝업 행사 영수증 첨부파일
+model PopupExpenseAttachment {
+  id              String    @id @default(cuid())
+  expenseId       String
+  fileName        String
+  filePath        String
+  fileSize        Int
+  mimeType        String
+  createdAt       DateTime  @default(now())
+
+  expense         PopupExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+}
