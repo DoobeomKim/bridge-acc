@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, signToken, setAuthCookie, getTokenFromRequest, SessionDuration } from '@/lib/auth'
 
 // 인증 없이 접근 가능한 경로
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout']
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout', '/api/automations/weekly-business-briefing']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
 
   // Sliding session: 30d-sliding이면 매 요청마다 쿠키 갱신
   if (payload.sessionType === '30d-sliding') {
-    const newToken = await signToken('30d-sliding')
+    const newToken = await signToken('30d-sliding', { actorKey: payload.actorKey, actorName: payload.actorName })
     setAuthCookie(response, newToken, '30d-sliding')
   }
 

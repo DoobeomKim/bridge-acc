@@ -7,6 +7,7 @@ import { Lock } from 'lucide-react'
 export default function LoginPage() {
   const router = useRouter()
   const [password, setPassword] = useState('')
+  const [actorKey, setActorKey] = useState('doobeom-kim')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -19,7 +20,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, actorKey }),
       })
 
       const data = await res.json()
@@ -45,10 +46,18 @@ export default function LoginPage() {
             <Lock className="w-5 h-5 text-zinc-700" />
           </div>
           <h1 className="text-xl font-semibold text-zinc-900 tracking-tight">Bridge Acc</h1>
-          <p className="text-sm text-zinc-400 mt-1">패스워드를 입력하세요</p>
+          <p className="text-sm text-zinc-400 mt-1">본인 계정으로 로그인하세요</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          <select
+            value={actorKey}
+            onChange={(e) => setActorKey(e.target.value)}
+            className="w-full px-4 py-2.5 border border-zinc-300 rounded-lg bg-white text-sm font-medium text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+          >
+            <option className="bg-white text-zinc-900" value="doobeom-kim">Doobeom Kim</option>
+            <option className="bg-white text-zinc-900" value="eu-ra-jung">Eu Ra Jung</option>
+          </select>
           <input
             type="password"
             value={password}
@@ -56,7 +65,7 @@ export default function LoginPage() {
             placeholder="패스워드"
             autoFocus
             autoComplete="current-password"
-            className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-colors"
+            className="w-full px-4 py-2.5 border border-zinc-300 rounded-lg bg-white text-sm text-zinc-900 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-colors"
           />
 
           {error && (

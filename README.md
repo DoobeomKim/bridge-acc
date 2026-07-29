@@ -2,6 +2,18 @@
 
 독일 GmbH 회사를 위한 회계자료 제출 및 관리 웹 애플리케이션
 
+## BridgeMakers AI OS 방향
+
+Bridge Acc는 현재 회계/재무 관리 시스템으로 사용 중이며, 앞으로는 **BridgeMakers AI Operating System**의 Finance 기반 모듈로 확장할 계획입니다.
+
+AI OS의 목표는 회사를 하나의 운영 시스템처럼 보고, 재무 현황·견적/인보이스·거래내역·고객 정보·업무 퀘스트·회사 메모를 연결해 대표가 매일 더 빠르게 판단하고 실행할 수 있게 만드는 것입니다.
+
+현재 정리된 제품 방향과 MVP 문서는 [`docs/`](./docs/README.md)에서 관리합니다.
+
+- 기존 회계 시스템 정리: [`docs/current-system/`](./docs/current-system/)
+- AI OS 제품 방향: [`docs/ai-os/`](./docs/ai-os/)
+- 컨셉 이미지와 참고자료: [`docs/references/`](./docs/references/)
+
 ## 주요 기능
 
 ### ✅ 구현 완료 (MVP)

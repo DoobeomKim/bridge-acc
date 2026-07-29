@@ -15,8 +15,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Bridge Acc - 독일 GmbH 회계 관리",
-  description: "독일 GmbH 회사를 위한 회계자료 제출 및 관리 시스템",
+  title: "BridgeMakers AI OS",
+  description: "BridgeMakers 회사를 위한 AI 운영 시스템",
 };
 
 export default function RootLayout({
@@ -27,10 +27,10 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050912]`}
       >
         <Navbar />
-        <main className="min-h-screen bg-gray-50">
+        <main className="os-main min-h-screen bg-[#050912] text-slate-100">
           {children}
         </main>
       </body>

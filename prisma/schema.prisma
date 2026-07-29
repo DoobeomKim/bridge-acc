@@ -171,6 +171,7 @@ model Customer {
 
   quotes          Quote[]
   invoices        Invoice[]
+  growthLeads     GrowthLead[]
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -394,4 +395,198 @@ model PopupExpenseAttachment {
   expense         PopupExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
 
   @@index([expenseId])
+}
+
+model ApprovalRequest {
+  id                  String    @id @default(cuid())
+  title               String
+  summary             String
+  actionType          String
+  workspace           String    @default("bridge")
+  riskLevel           String    @default("high")
+  status              String    @default("pending")
+  evidence            String?
+  proposedPayload     String?
+  requestedBy         String    @default("system")
+  constitutionVersion String    @default("1.0.0")
+  decidedBy           String?
+  decisionNote        String?
+  decidedAt           DateTime?
+  expiresAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  automationRun       AutomationRun?
+  outreachDraft       GrowthOutreachDraft?
+
+  @@index([status, createdAt])
+  @@index([workspace, status])
+}
+
+model AutomationRun {
+  id                  String    @id @default(cuid())
+  skillKey            String
+  skillVersion        String
+  workspace           String
+  triggerType         String
+  triggerKey          String    @unique
+  status              String    @default("scheduled")
+  scheduledFor        DateTime?
+  startedAt           DateTime?
+  finishedAt          DateTime?
+  inputEvidence       String?
+  output              String?
+  error               String?
+  nextAction          String?
+  constitutionVersion String    @default("1.0.0")
+  approvalRequestId   String?   @unique
+  campaignId          String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  approvalRequest ApprovalRequest? @relation(fields: [approvalRequestId], references: [id])
+  campaign        GrowthCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  researchSources GrowthResearchSource[]
+  researchLeads   GrowthLead[]
+
+  @@index([status, scheduledFor])
+  @@index([skillKey, createdAt])
+  @@index([workspace, createdAt])
+  @@index([campaignId, createdAt])
+}
+
+model BusinessBriefing {
+  id                  String    @id @default(cuid())
+  periodKey           String    @unique
+  workspace           String    @default("company")
+  status              String    @default("draft")
+  headline            String
+  priorities          String
+  financeSignals      String
+  growthSignals       String
+  risks               String
+  decisionsNeeded     String
+  evidence            String?
+  constitutionVersion String    @default("1.0.0")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([createdAt])
+}
+
+model GrowthCampaign {
+  id              String    @id @default(cuid())
+  workspace       String
+  name            String
+  hypothesis      String
+  targetAudience  String
+  offer           String?
+  status          String    @default("draft")
+  successCriteria String
+  startsAt        DateTime?
+  endsAt          DateTime?
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  leads           GrowthLead[]
+  researchRuns    AutomationRun[]
+
+  @@index([workspace, status])
+  @@index([createdAt])
+}
+
+model GrowthLead {
+  id              String    @id @default(cuid())
+  campaignId      String
+  customerId      String?
+  researchRunId   String?
+  companyName     String
+  website         String?
+  country         String?
+  industry        String?
+  contactName     String?
+  contactRole     String?
+  contactChannel  String?
+  sourceUrl       String?
+  evidence        String?
+  researchSummary String?
+  uncertainties   String?
+  researchPurpose String?
+  researchQuestion String?
+  priority        String    @default("normal")
+  sourceType      String    @default("manual")
+  facts           String?
+  inferences      String?
+  researchDetails String?
+  researchOverallStatus String @default("insufficient")
+  researchPolicyVersion String?
+  opportunityScore Int?
+  actionabilityScore Int?
+  confidence      Int?
+  sourceCount     Int       @default(0)
+  fitScore        Int?
+  reviewStatus    String    @default("pending")
+  stage           String    @default("discovered")
+  nextAction      String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  campaign        GrowthCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  researchRun     AutomationRun? @relation(fields: [researchRunId], references: [id], onDelete: SetNull)
+  outreachDrafts  GrowthOutreachDraft[]
+  researchSources GrowthResearchSource[]
+
+  @@unique([campaignId, customerId])
+  @@index([campaignId, stage])
+  @@index([campaignId, reviewStatus])
+  @@index([customerId])
+  @@index([researchRunId])
+  @@index([companyName])
+  @@index([researchOverallStatus])
+}
+
+model GrowthResearchSource {
+  id          String   @id @default(cuid())
+  runId       String
+  leadId      String?
+  url         String
+  title       String
+  excerpt     String?
+  pageAge     String?
+  contentHash String
+  retrievedAt DateTime @default(now())
+
+  run         AutomationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  lead        GrowthLead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([runId, url])
+  @@index([leadId])
+  @@index([retrievedAt])
+}
+
+model GrowthOutreachDraft {
+  id                String    @id @default(cuid())
+  leadId            String
+  channel           String
+  language          String    @default("de")
+  subject           String?
+  body              String
+  rationale         String?
+  evidence          String?
+  status            String    @default("draft")
+  payloadHash       String
+  approvalRequestId String?   @unique
+  approvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  lead              GrowthLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  approvalRequest   ApprovalRequest? @relation(fields: [approvalRequestId], references: [id])
+
+  @@index([leadId, status])
+  @@index([createdAt])
 }

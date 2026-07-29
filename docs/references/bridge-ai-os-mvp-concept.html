@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BridgeMakers AI OS MVP Concept</title>
+  <style>
+    :root {
+      --bg: #050912;
+      --panel: rgba(12, 24, 43, 0.78);
+      --panel-2: rgba(7, 17, 31, 0.9);
+      --line: rgba(111, 198, 255, 0.22);
+      --text: #edf7ff;
+      --muted: #82a2bd;
+      --cyan: #16d9ff;
+      --blue: #2d74ff;
+      --violet: #9b5cff;
+      --teal: #19e0bd;
+      --amber: #ffb341;
+      --rose: #ff5d8f;
+      --green: #41f2a7;
+      --danger: #ff5b6e;
+      --shadow: 0 0 28px rgba(22, 217, 255, 0.16);
+      font-family: Inter, Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 48% 8%, rgba(45, 116, 255, 0.25), transparent 34%),
+        radial-gradient(circle at 88% 78%, rgba(155, 92, 255, 0.14), transparent 30%),
+        linear-gradient(145deg, #03050b 0%, #07111f 48%, #03050b 100%);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .screen {
+      width: 2560px;
+      height: 1440px;
+      position: relative;
+      padding: 34px 34px 34px 338px;
+      background-image:
+        linear-gradient(rgba(111, 198, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(111, 198, 255, 0.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    .screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 47%, transparent 0 22%, rgba(22, 217, 255, 0.05) 22.2%, transparent 23%),
+        radial-gradient(circle at 50% 47%, transparent 0 33%, rgba(45, 116, 255, 0.06) 33.2%, transparent 33.8%);
+      pointer-events: none;
+    }
+
+    .sidebar {
+      position: absolute;
+      left: 24px;
+      top: 24px;
+      bottom: 24px;
+      width: 282px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(6, 16, 31, 0.94), rgba(2, 8, 18, 0.96));
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 28px 22px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 4px 4px 34px;
+      border-bottom: 1px solid rgba(111, 198, 255, 0.16);
+      margin-bottom: 24px;
+    }
+
+    .mark {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      border: 1px solid rgba(22, 217, 255, 0.5);
+      display: grid;
+      place-items: center;
+      color: var(--cyan);
+      font-size: 32px;
+      font-weight: 900;
+      box-shadow: inset 0 0 22px rgba(22, 217, 255, 0.18), 0 0 20px rgba(22, 217, 255, 0.2);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 23px;
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .nav {
+      display: grid;
+      gap: 10px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 64px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      color: #b8cde2;
+      border: 1px solid transparent;
+    }
+
+    .nav-item.active {
+      color: white;
+      border-color: rgba(22, 217, 255, 0.45);
+      background: linear-gradient(90deg, rgba(45, 116, 255, 0.75), rgba(22, 217, 255, 0.08));
+      box-shadow: 0 0 24px rgba(45, 116, 255, 0.28);
+    }
+
+    .nav-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(130, 162, 189, 0.42);
+      color: var(--cyan);
+      font-size: 16px;
+    }
+
+    .nav-text strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 3px;
+    }
+
+    .nav-text span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .system-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      border: 1px solid rgba(111, 198, 255, 0.2);
+      background: rgba(7, 18, 33, 0.84);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .system-card h3 {
+      margin: 0 0 14px;
+      font-size: 14px;
+      color: #d8efff;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-top: 11px;
+      color: #b6cadc;
+    }
+
+    .bar {
+      height: 7px;
+      margin-top: 6px;
+      border-radius: 999px;
+      background: rgba(130, 162, 189, 0.16);
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+    }
+
+    .topbar {
+      position: relative;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(111, 198, 255, 0.16);
+      margin-bottom: 24px;
+      padding-right: 18px;
+    }
+
+    .title-block h2 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    .title-block p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      border: 1px solid rgba(111, 198, 255, 0.22);
+      background: rgba(7, 18, 33, 0.72);
+      display: grid;
+      place-items: center;
+      color: #cfefff;
+    }
+
+    .grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.34fr 0.86fr;
+      grid-template-rows: 376px 488px 354px;
+      gap: 22px;
+      z-index: 1;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(12, 25, 45, 0.82), rgba(6, 15, 29, 0.86));
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(120deg, rgba(22, 217, 255, 0.08), transparent 28%, rgba(155, 92, 255, 0.07));
+      pointer-events: none;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid rgba(111, 198, 255, 0.14);
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 28px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(22, 217, 255, 0.28);
+      color: #bdefff;
+      background: rgba(22, 217, 255, 0.07);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .briefing {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .briefing-body {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 24px;
+    }
+
+    .brief-card {
+      min-height: 252px;
+      border: 1px solid rgba(111, 198, 255, 0.16);
+      border-radius: 16px;
+      background: rgba(4, 13, 25, 0.58);
+      padding: 20px;
+    }
+
+    .brief-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      margin-bottom: 22px;
+      background: rgba(22, 217, 255, 0.1);
+      border: 1px solid rgba(22, 217, 255, 0.35);
+      color: var(--cyan);
+      box-shadow: 0 0 18px rgba(22, 217, 255, 0.18);
+    }
+
+    .brief-card h4 {
+      margin: 0 0 14px;
+      font-size: 17px;
+    }
+
+    .brief-card p {
+      margin: 0;
+      color: #a8bed3;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .agents {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .agents-body {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      padding: 20px 24px 24px;
+    }
+
+    .agent-card {
+      min-height: 182px;
+      border: 1px solid rgba(111, 198, 255, 0.16);
+      border-radius: 16px;
+      background: rgba(4, 13, 25, 0.6);
+      padding: 17px;
+      position: relative;
+    }
+
+    .agent-card.wide {
+      grid-column: span 2;
+    }
+
+    .agent-top {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 15px;
+    }
+
+    .agent-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .production { background: linear-gradient(135deg, #2d74ff, #16d9ff); }
+    .planning { background: linear-gradient(135deg, #4c7dff, #9b5cff); }
+    .marketing { background: linear-gradient(135deg, #9b5cff, #ff5dff); }
+    .finance { background: linear-gradient(135deg, #ff8a22, #ffcf55); }
+    .network { background: linear-gradient(135deg, #19e0bd, #2d74ff); }
+    .rnd { background: linear-gradient(135deg, #12c9ff, #20f4a6); }
+    .culture { background: linear-gradient(135deg, #ff5d8f, #9b5cff); }
+
+    .agent-title strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .agent-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .agent-lines {
+      display: grid;
+      gap: 7px;
+      color: #b6cadc;
+      font-size: 12px;
+    }
+
+    .agent-lines b {
+      color: #ecf8ff;
+      font-weight: 700;
+    }
+
+    .quest {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+
+    .quest-body {
+      position: relative;
+      z-index: 1;
+      padding: 18px 20px 20px;
+    }
+
+    .quest-row {
+      display: grid;
+      grid-template-columns: 1.2fr 0.62fr 0.56fr;
+      gap: 12px;
+      align-items: center;
+      min-height: 94px;
+      padding: 16px 14px;
+      border-bottom: 1px solid rgba(111, 198, 255, 0.11);
+    }
+
+    .quest-row:last-child { border-bottom: 0; }
+
+    .quest-title strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 7px;
+    }
+
+    .quest-title span, .next-action {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .dept {
+      font-size: 12px;
+      color: #d7eaff;
+    }
+
+    .status {
+      justify-self: end;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .active { background: rgba(25, 224, 189, 0.22); color: #83ffe8; }
+    .blocked { background: rgba(255, 91, 110, 0.2); color: #ff9dab; }
+    .due { background: rgba(255, 179, 65, 0.2); color: #ffd695; }
+    .done { background: rgba(65, 242, 167, 0.16); color: #a1ffd3; }
+
+    .bottom {
+      grid-column: 1 / span 2;
+      grid-row: 3;
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr 0.8fr;
+      gap: 22px;
+    }
+
+    .quick-body, .memory-body, .strategy-body {
+      position: relative;
+      z-index: 1;
+      padding: 20px 24px 24px;
+    }
+
+    .input-box {
+      height: 96px;
+      border-radius: 16px;
+      border: 1px dashed rgba(22, 217, 255, 0.36);
+      background: rgba(4, 13, 25, 0.58);
+      display: flex;
+      align-items: center;
+      padding: 0 22px;
+      color: #9ebbd1;
+      font-size: 15px;
+      margin-bottom: 18px;
+    }
+
+    .quick-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .quick-buttons button {
+      height: 58px;
+      border: 1px solid rgba(111, 198, 255, 0.18);
+      background: rgba(22, 217, 255, 0.06);
+      color: #dff7ff;
+      border-radius: 14px;
+      font-size: 12px;
+      font: inherit;
+    }
+
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .memory-card {
+      min-height: 145px;
+      border-radius: 16px;
+      border: 1px solid rgba(111, 198, 255, 0.16);
+      background: rgba(4, 13, 25, 0.58);
+      padding: 16px;
+    }
+
+    .memory-card strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    .memory-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .strategy-body {
+      display: grid;
+      gap: 14px;
+    }
+
+    .decision {
+      border-radius: 16px;
+      border: 1px solid rgba(155, 92, 255, 0.25);
+      background: rgba(155, 92, 255, 0.08);
+      padding: 18px;
+    }
+
+    .decision strong {
+      display: block;
+      color: #f0e8ff;
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    .decision span {
+      color: #bdaee0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .glow-line {
+      position: absolute;
+      height: 1px;
+      width: 220px;
+      background: linear-gradient(90deg, transparent, rgba(22, 217, 255, 0.8), transparent);
+      opacity: 0.8;
+    }
+
+    .glow-line.one { top: 126px; left: 950px; }
+    .glow-line.two { top: 887px; right: 276px; }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">B</div>
+        <div>
+          <h1>BRIDGEMAKERS<br />AI OS</h1>
+          <p>Company Command Center</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-item active"><div class="nav-icon">⌘</div><div class="nav-text"><strong>Command</strong><span>오늘의 운영판</span></div></div>
+        <div class="nav-item"><div class="nav-icon">AI</div><div class="nav-text"><strong>Agents</strong><span>7개 부서 AI</span></div></div>
+        <div class="nav-item"><div class="nav-icon">Q</div><div class="nav-text"><strong>Quests</strong><span>업무와 미션</span></div></div>
+        <div class="nav-item"><div class="nav-icon">M</div><div class="nav-text"><strong>Memory</strong><span>회사 기억</span></div></div>
+        <div class="nav-item"><div class="nav-icon">S</div><div class="nav-text"><strong>Strategy</strong><span>전략 회의</span></div></div>
+        <div class="nav-item"><div class="nav-icon">₩</div><div class="nav-text"><strong>Finance</strong><span>매출과 비용</span></div></div>
+      </nav>
+
+      <div class="system-card">
+        <h3>SYSTEM STATUS</h3>
+        <div class="metric"><span>AI Briefing</span><strong>Ready</strong></div>
+        <div class="bar"><span style="width: 92%"></span></div>
+        <div class="metric"><span>Memory Sync</span><strong>78%</strong></div>
+        <div class="bar"><span style="width: 78%"></span></div>
+        <div class="metric"><span>Quest Health</span><strong>64%</strong></div>
+        <div class="bar"><span style="width: 64%"></span></div>
+      </div>
+    </aside>
+
+    <header class="topbar">
+      <div class="title-block">
+        <h2>Company Command Center</h2>
+        <p>MVP: briefing, agents, quests, and company memory in one operating screen</p>
+      </div>
+      <div class="top-actions">
+        <span>2026.06.05 FRI</span>
+        <div class="icon-btn">⌕</div>
+        <div class="icon-btn">◌</div>
+        <div class="icon-btn">⚙</div>
+      </div>
+    </header>
+
+    <div class="glow-line one"></div>
+    <div class="glow-line two"></div>
+
+    <section class="grid">
+      <article class="panel briefing">
+        <div class="panel-header">
+          <h3>TODAY CEO BRIEFING</h3>
+          <span class="chip">Generated from notes + quests</span>
+        </div>
+        <div class="briefing-body">
+          <div class="brief-card">
+            <div class="brief-icon">①</div>
+            <h4>Top 3 Priorities</h4>
+            <p>오늘 반드시 밀어야 할 핵심 업무 3개를 대표 관점으로 정렬합니다.</p>
+          </div>
+          <div class="brief-card">
+            <div class="brief-icon">₩</div>
+            <h4>Revenue-linked Action</h4>
+            <p>돈과 직접 연결되는 영업, 견적, 인보이스 액션을 먼저 띄웁니다.</p>
+          </div>
+          <div class="brief-card">
+            <div class="brief-icon">!</div>
+            <h4>Blocked Issue</h4>
+            <p>막힌 프로젝트와 기다리는 답변을 다시 보여줍니다.</p>
+          </div>
+          <div class="brief-card">
+            <div class="brief-icon">→</div>
+            <h4>Recommended Decision</h4>
+            <p>오늘 결정해야 회사가 앞으로 움직이는 선택지를 제안합니다.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel agents">
+        <div class="panel-header">
+          <h3>7 DEPARTMENT AI AGENTS</h3>
+          <span class="chip">Role-based MVP agents</span>
+        </div>
+        <div class="agents-body">
+          <div class="agent-card">
+            <div class="agent-top"><div class="agent-icon production">▶</div><div class="agent-title"><strong>Production AI</strong><span>제작 / 납품</span></div></div>
+            <div class="agent-lines"><span><b>Focus</b> 결과물 품질</span><span><b>Blocker</b> 피드백 대기</span><span><b>Next</b> 리뷰 컷 정리</span></div>
+            <div class="bar"><span style="width: 74%"></span></div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-top"><div class="agent-icon planning">◆</div><div class="agent-title"><strong>Planning AI</strong><span>기획 / PM</span></div></div>
+            <div class="agent-lines"><span><b>Focus</b> 일정 구조</span><span><b>Blocker</b> 견적 확정</span><span><b>Next</b> 주간 플랜</span></div>
+            <div class="bar"><span style="width: 68%"></span></div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-top"><div class="agent-icon marketing">↗</div><div class="agent-title"><strong>Marketing AI</strong><span>영업 / 브랜딩</span></div></div>
+            <div class="agent-lines"><span><b>Focus</b> 리드 발굴</span><span><b>Blocker</b> 포트폴리오</span><span><b>Next</b> 메세 리스트</span></div>
+            <div class="bar"><span style="width: 82%"></span></div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-top"><div class="agent-icon finance">₩</div><div class="agent-title"><strong>Finance AI</strong><span>재무 / 운영</span></div></div>
+            <div class="agent-lines"><span><b>Focus</b> 현금흐름</span><span><b>Blocker</b> 미수금</span><span><b>Next</b> 인보이스</span></div>
+            <div class="bar"><span style="width: 61%"></span></div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-top"><div class="agent-icon network">∞</div><div class="agent-title"><strong>Network AI</strong><span>파트너 / 바이어</span></div></div>
+            <div class="agent-lines"><span><b>Focus</b> 연결 자산</span><span><b>Blocker</b> 후속 연락</span><span><b>Next</b> 파트너 태그</span></div>
+            <div class="bar"><span style="width: 58%"></span></div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-top"><div class="agent-icon rnd">AI</div><div class="agent-title"><strong>R&D AI</strong><span>자동화 / 툴</span></div></div>
+            <div class="agent-lines"><span><b>Focus</b> 내부 시스템</span><span><b>Blocker</b> 데이터 정리</span><span><b>Next</b> Memory MVP</span></div>
+            <div class="bar"><span style="width: 71%"></span></div>
+          </div>
+          <div class="agent-card wide">
+            <div class="agent-top"><div class="agent-icon culture">♥</div><div class="agent-title"><strong>Culture AI</strong><span>루틴 / 팀 케어</span></div></div>
+            <div class="agent-lines"><span><b>Focus</b> 지속 가능한 운영</span><span><b>Blocker</b> 한 가지 일에 과몰입</span><span><b>Next</b> 오늘 루틴 체크 + 회고 질문</span></div>
+            <div class="bar"><span style="width: 66%"></span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel quest">
+        <div class="panel-header">
+          <h3>ACTIVE QUEST BOARD</h3>
+          <span class="chip">Company work as quests</span>
+        </div>
+        <div class="quest-body">
+          <div class="quest-row">
+            <div class="quest-title"><strong>Fairtale landing MVP</strong><span>제품을 바이어 상담 상태로 보여주기</span></div>
+            <div class="dept">Marketing</div>
+            <span class="status active">Active</span>
+          </div>
+          <div class="quest-row">
+            <div class="quest-title"><strong>Messe outreach list</strong><span>Anuga / Vision 후보 기업 정리</span></div>
+            <div class="dept">Network</div>
+            <span class="status due">Due</span>
+          </div>
+          <div class="quest-row">
+            <div class="quest-title"><strong>Bridge portfolio update</strong><span>전시회 영상 사례 정리</span></div>
+            <div class="dept">Production</div>
+            <span class="status active">Active</span>
+          </div>
+          <div class="quest-row">
+            <div class="quest-title"><strong>Invoice follow-up</strong><span>이번 달 들어올 돈 확인</span></div>
+            <div class="dept">Finance</div>
+            <span class="status blocked">Blocked</span>
+          </div>
+          <div class="quest-row">
+            <div class="quest-title"><strong>AI memory prototype</strong><span>메모 입력 → 퀘스트 변환</span></div>
+            <div class="dept">R&D</div>
+            <span class="status active">Active</span>
+          </div>
+          <div class="quest-row">
+            <div class="quest-title"><strong>Weekly review ritual</strong><span>대표 루틴과 회고 흐름</span></div>
+            <div class="dept">Culture</div>
+            <span class="status done">Done</span>
+          </div>
+        </div>
+      </article>
+
+      <div class="bottom">
+        <article class="panel">
+          <div class="panel-header">
+            <h3>QUICK ADD MEMORY</h3>
+            <span class="chip">Start simple</span>
+          </div>
+          <div class="quick-body">
+            <div class="input-box">회의 메모, 고객 대화, 아이디어, 오늘 생각을 붙여넣기</div>
+            <div class="quick-buttons">
+              <button>Meeting Note</button>
+              <button>Idea</button>
+              <button>Client Update</button>
+              <button>Task</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h3>COMPANY MEMORY</h3>
+            <span class="chip">Searchable context</span>
+          </div>
+          <div class="memory-body">
+            <div class="memory-grid">
+              <div class="memory-card"><strong>Projects</strong><span>진행 중인 일과 과거 산출물</span></div>
+              <div class="memory-card"><strong>Clients</strong><span>고객, 파트너, 후속 연락</span></div>
+              <div class="memory-card"><strong>Lessons</strong><span>실패, 피드백, 반복 패턴</span></div>
+              <div class="memory-card"><strong>Decisions</strong><span>대표가 정한 방향과 이유</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h3>STRATEGY ROOM</h3>
+            <span class="chip">Weekly</span>
+          </div>
+          <div class="strategy-body">
+            <div class="decision"><strong>CEO AI asks</strong><span>이번 주 회사의 병목은 무엇인가?</span></div>
+            <div class="decision"><strong>Agents respond</strong><span>각 부서 관점으로 다음 행동을 제안</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

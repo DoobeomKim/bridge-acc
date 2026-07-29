@@ -8,8 +8,9 @@ const readline = require('readline')
 
 async function hashPassword(password) {
   const hash = await bcrypt.hash(password, 12)
-  console.log('\n✅ 아래 값을 .env 파일에 추가하세요:\n')
-  console.log(`ADMIN_PASSWORD_HASH="${hash}"`)
+  const base64Hash = Buffer.from(hash).toString('base64')
+  console.log('\n✅ 아래 값을 .env 파일에 추가하세요 (Base64 인코딩 완료):\n')
+  console.log(`ADMIN_PASSWORD_HASH="${base64Hash}"`)
   console.log('\n⚠️  패스워드 원문은 저장하지 마세요.\n')
 }
 

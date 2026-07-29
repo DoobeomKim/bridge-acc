@@ -8,15 +8,20 @@ export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json()
+    const { password, actorKey } = await request.json()
 
     if (!password) {
       return NextResponse.json({ error: '패스워드를 입력해주세요.' }, { status: 400 })
     }
 
-    const passwordHashB64 = process.env.ADMIN_PASSWORD_HASH
+    if (!['doobeom-kim', 'eu-ra-jung'].includes(actorKey)) {
+      return NextResponse.json({ error: '사용자를 선택해주세요.' }, { status: 400 })
+    }
+    const passwordHashB64 = actorKey === 'doobeom-kim'
+      ? (process.env.DOOBEOM_PASSWORD_HASH || process.env.ADMIN_PASSWORD_HASH)
+      : process.env.EURA_PASSWORD_HASH
     if (!passwordHashB64) {
-      console.error('ADMIN_PASSWORD_HASH 환경변수가 설정되지 않았습니다.')
+      console.error(`${actorKey} password hash is not configured.`)
       return NextResponse.json({ error: '서버 설정 오류입니다.' }, { status: 500 })
     }
 
@@ -32,7 +37,8 @@ export async function POST(request: NextRequest) {
     const settings = await prisma.settings.findFirst()
     const sessionDuration = (settings?.sessionDuration || '7d') as SessionDuration
 
-    const token = await signToken(sessionDuration)
+    const actorName = actorKey === 'doobeom-kim' ? 'Doobeom Kim' : 'Eu Ra Jung'
+    const token = await signToken(sessionDuration, { actorKey, actorName })
 
     const response = NextResponse.json({ success: true })
     setAuthCookie(response, token, sessionDuration)

@@ -7,6 +7,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Brain,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -17,17 +18,20 @@ import {
   Settings,
   Sparkles,
   Store,
+  TrendingUp,
   Users,
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Command', description: '회사 운영판', href: '/', icon: LayoutDashboard },
+  { name: 'Growth', description: '사업 가설과 영업', href: '/growth', icon: TrendingUp },
   { name: 'Finance', description: '재무 현황', href: '/reports', icon: BarChart3 },
   { name: 'Transactions', description: '거래 흐름', href: '/transactions', icon: ArrowLeftRight },
   { name: '팝업행사', description: '행사 비용', href: '/popup-events', icon: Store },
   { name: 'Clients', description: '고객 기억', href: '/customers', icon: Users },
   { name: 'Quotes', description: '제안 퀘스트', href: '/quotes', icon: FileText },
   { name: 'Invoices', description: '매출 파이프라인', href: '/invoices', icon: Receipt },
+  { name: 'Approvals', description: '승인과 브리핑', href: '/approvals', icon: ShieldCheck },
   { name: 'Agents', description: '부서 AI', href: '/', icon: Brain },
   { name: 'Network', description: '파트너', href: '/', icon: Network },
   { name: 'Settings', description: '시스템 설정', href: '/settings', icon: Settings },

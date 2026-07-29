@@ -40,3 +40,12 @@ next-env.d.ts
 
 # uploads
 /uploads
+
+# local Codex/Windows preview runtime
+/.runtime-cache/
+/node_modules_broken_*/
+/dev-server*.log
+/.env.local.backup
+/data-export.json
+._*
+**/._*

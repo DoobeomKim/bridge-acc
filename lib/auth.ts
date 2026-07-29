@@ -9,8 +9,10 @@ const JWT_SECRET = new TextEncoder().encode(
 
 export type SessionDuration = '24h' | '7d' | '30d-sliding'
 
-interface TokenPayload {
+export interface TokenPayload {
   sessionType: SessionDuration
+  actorKey: 'doobeom-kim' | 'eu-ra-jung'
+  actorName: string
   iat?: number
   exp?: number
 }
@@ -23,9 +25,9 @@ function durationToSeconds(duration: SessionDuration): number {
   }
 }
 
-export async function signToken(sessionType: SessionDuration): Promise<string> {
+export async function signToken(sessionType: SessionDuration, actor: Pick<TokenPayload, 'actorKey' | 'actorName'>): Promise<string> {
   const expiresIn = durationToSeconds(sessionType)
-  return new SignJWT({ sessionType })
+  return new SignJWT({ sessionType, ...actor })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + expiresIn)

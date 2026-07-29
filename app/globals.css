@@ -76,3 +76,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .os-main {
+    transition: padding-left 300ms ease;
+  }
+
+  @media (min-width: 1024px) {
+    body[data-sidebar="expanded"] .os-main {
+      padding-left: 292px;
+    }
+
+    body[data-sidebar="collapsed"] .os-main,
+    body:not([data-sidebar]) .os-main {
+      padding-left: 86px;
+    }
+  }
+}
