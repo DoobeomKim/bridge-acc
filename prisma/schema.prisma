@@ -471,7 +471,29 @@ model BusinessBriefing {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
+  revisions           BusinessBriefingRevision[]
+
   @@index([createdAt])
+}
+
+model BusinessBriefingRevision {
+  id                  String   @id @default(cuid())
+  briefingId          String
+  dateKey             String
+  revisionNumber      Int
+  snapshot            String
+  changeSummary       String?
+  evidence            String?
+  automationRunId     String?
+  constitutionVersion String   @default("1.0.0")
+  createdAt           DateTime @default(now())
+
+  briefing BusinessBriefing @relation(fields: [briefingId], references: [id], onDelete: Cascade)
+
+  @@unique([briefingId, dateKey])
+  @@unique([briefingId, revisionNumber])
+  @@index([createdAt])
+  @@index([automationRunId])
 }
 
 model GrowthCampaign {

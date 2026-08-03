@@ -7,23 +7,23 @@ The first implementation establishes a reusable operating control plane rather t
 1. `BRIDGE_CONSTITUTION.md` defines stable human-approved values and boundaries.
 2. `lib/company-policy.ts` turns critical boundaries into machine-readable defaults.
 3. `ApprovalRequest`, `AutomationRun`, and `BusinessBriefing` preserve control and audit history.
-4. The weekly business-development briefing proves the full scheduled workflow.
+4. The daily-updated weekly business-development briefing proves the full scheduled workflow.
 
 ## First workflow
 
 ```text
-Hourly Vercel trigger
-  -> Europe/Berlin Monday 08:00 check
-  -> weekly idempotency check
-  -> read finance, quotes, and invoices
-  -> create internal briefing
-  -> create human decision request
+Daily Vercel trigger at 07:00 UTC
+  -> daily idempotency check
+  -> read the previous week's results and the current week's changes
+  -> create or update this week's internal briefing
+  -> preserve an immutable daily briefing revision
+  -> create a human decision request only for a new material decision
   -> wait in Approval Inbox
   -> Doobeom Kim or Eu Ra Jung decides
   -> preserve actor, decision, evidence, and run state
 ```
 
-The hourly trigger is intentional: Vercel cron uses UTC, while Berlin changes between CET and CEST. The application performs the final local-time check.
+The daily trigger is compatible with the Vercel Hobby plan. It runs at 08:00 in Berlin during CET and 09:00 during CEST. Monday opens a new weekly period from the previous week's results; later daily runs update the same weekly briefing without deleting prior revisions.
 
 ## Business workspaces
 

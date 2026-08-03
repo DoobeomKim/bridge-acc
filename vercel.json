@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/automations/weekly-business-briefing",
-      "schedule": "0 * * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }
