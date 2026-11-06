@@ -171,8 +171,8 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 28,
     right: 28,
-    fontSize: 7,
-    color: '#666',
+    fontSize: 8,
+    color: '#333',
     borderTopWidth: 0.5,
     borderTopColor: '#ccc',
     paddingTop: 6,
@@ -180,6 +180,10 @@ const styles = StyleSheet.create({
   },
   footerRow: {
     marginBottom: 1.5,
+  },
+  bankDetails: {
+    color: '#111',
+    fontWeight: 700,
   },
   badge: {
     backgroundColor: '#ff6b6b',
@@ -404,7 +408,7 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings }) => 
             </Text>
           )}
           {(settings.bankName || settings.iban || settings.bic) && (
-            <Text style={styles.footerRow}>
+            <Text style={[styles.footerRow, styles.bankDetails]}>
               {settings.bankName && `Bank: ${settings.bankName}`}
               {settings.bankName && settings.iban && ' | '}
               {settings.iban && `IBAN: ${settings.iban}`}
