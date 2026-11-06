@@ -38,7 +38,7 @@ Font.register({
 const styles = StyleSheet.create({
   page: {
     paddingTop: 30,
-    paddingBottom: 80, // 푸터 공간 확보
+    paddingBottom: 100, // 회사명과 송금정보 줄바꿈을 위한 푸터 공간 확보
     paddingHorizontal: 28,
     fontSize: 10,
     fontFamily: 'Noto Sans KR',
@@ -398,13 +398,14 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings }) => 
         {/* 푸터 */}
         <View style={styles.footer}>
           {/* 법적 정보 */}
-          {(settings.hrb || settings.managingDirector || settings.email) && (
+          {(settings.companyName || settings.hrb || settings.managingDirector || settings.email) && (
             <Text style={styles.footerRow}>
-              {settings.hrb && `HRB ${settings.hrb}`}
-              {settings.hrb && settings.managingDirector && ' | '}
-              {settings.managingDirector && `Geschäftsführer: ${settings.managingDirector}`}
-              {(settings.hrb || settings.managingDirector) && settings.email && ' | '}
-              {settings.email && `E-Mail: ${settings.email}`}
+              {[
+                settings.companyName,
+                settings.hrb && `HRB ${settings.hrb}`,
+                settings.managingDirector && `Geschäftsführer: ${settings.managingDirector}`,
+                settings.email && `E-Mail: ${settings.email}`,
+              ].filter(Boolean).join(' | ')}
             </Text>
           )}
           {(settings.bankName || settings.iban || settings.bic) && (
