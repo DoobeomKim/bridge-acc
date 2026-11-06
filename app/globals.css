@@ -93,3 +93,18 @@
     }
   }
 }
+/* Keep light finance pages readable inside the dark OS shell. */
+.os-main > .min-h-screen.bg-zinc-50 {
+  color: #18181b;
+  color-scheme: light;
+}
+.os-main > .min-h-screen.bg-zinc-50 :is(input, select, textarea) {
+  color: #18181b;
+}
+.os-main > .min-h-screen.bg-zinc-50 :is(input, textarea)::placeholder {
+  color: #71717a;
+  opacity: 1;
+}
+.os-main > .min-h-screen.bg-zinc-50 .tracking-widest.text-zinc-400 {
+  color: #52525b;
+}
